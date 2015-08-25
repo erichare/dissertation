@@ -11,7 +11,7 @@ Ideas:
 
 * Good designs of GUIs
 * History of Statistics and Computing
-* R didn't initially get recognition, until nobel prize for mathematics
+* R didn't initially get recognition, until 'nobel prize' for computer science (ACM award)
 
 ## Chapter 1 - Theoretical Considerations for Visual Inference
 This chapter covers the Statistical Methodology portion of my dissertation
