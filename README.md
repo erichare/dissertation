@@ -5,7 +5,7 @@ My dissertation for a PhD in Statistics (Co-Major in Computer Science) at Iowa S
 
 "Statistics, Computer Science, and the Bridge"
 
-### Chapter 0 - Lit Review
+## Chapter 0 - Lit Review
 
 Ideas:
 
