@@ -36,17 +36,22 @@ https://erichare.shinyapps.io/discreteRV-shiny
 ### 2.3 - PeLiCa
 http://www.pelica.org
 
-### 2.4 - Lineups
+### 2.4 - Logo Plots
+http://erichare.shinyapps.io/gglogo
+
+### 2.5 - Lineups
 TBD
 
 ## Chapter 3 - The Interface Between Statistics and Computer Science
 This chapter covers the Statistical Computation / Data Science portion of my dissertation
 
-### 3.1 - intRo Module Framework
+### 3.1 - intRopack
 
 ### 3.2 - discreteRV
 
 ### 3.3 - Peptider
 
-### 3.4 - Lineupgen
+### 3.4 - gglogo
+
+### 3.5 - Lineupgen
 
