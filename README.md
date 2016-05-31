@@ -1,57 +1,30 @@
 # My Dissertation
+
 My dissertation for a PhD in Statistics (Co-Major in Computer Science) at Iowa State University
+
+## Title
+
+Enabling Scientists to Understand Their Data using Web-based Statistical Tools.
 
 ## Outline
 
-"Statistics, Computer Science, and the Bridge"
+1. Automatic Matching of Bullet Lands
+2. Introducing Statistics with intRo (or bullets follow-up paper)
+3. A Web Framework for Rapid Deployment of Visual Inference Studies
 
-## Chapter 0 - Lit Review
+## Proposal (Containing Lit Review)
 
-Ideas:
+My proposal to the committee of what im going to do (15 pages):
 
-* Good designs of GUIs
-* History of Statistics and Computing
-* R didn't initially get recognition, until 'nobel prize' for computer science (ACM award)
+Roughly 12 pages other people's work, 3 pages what i will do.
 
-## Chapter 1 - Theoretical Considerations for Visual Inference
-This chapter covers the Statistical Methodology portion of my dissertation
+1. Review literature (show that we know the literature and what I'm talking about)
+2. Point out where literature is inadequate
+    a. Working between statistics and computer science - All the tools we would use. Focus on the things that go beyond Shiny, but may be generalizable - Things that I see myself doing with every one of the applications. Show that i can adapt and create something new. biology, stats ed, forensics science
+    b. The statistics itself - Bullets, composition of a lot of smaller data analysis self. Outline each step, and talk about transparency of the process and getting things online (x3prplus, x3p files). This needs to be a pretty major cultural shift - No more black boxes.
+    c. The computer science itself - Interface design. Read "The Design of Everyday Things"
+3. Cover bullets and visual inference literature (about 10 papers for visual inference total)
+    
+## TODO
 
-Ideas:
-
-* Scenarios of simulation - How do you present lineups?
-* '?Exchanging null plots, dependency in lineups?'
-* Tie into giving domain experts access to statistical tools
-
-## Chapter 2 - Web-Based Applications for Visual Inference and Data Science
-This chapter covers the Computing portion of my dissertation
-
-Computational Statisticians make data science a reality - We can pull applications from chem, biology, statistics, and enable people to do statistics in their domain...It's up to computational statisticians to make statistics available to domain experts. We can't leave it at the hand of comp sci, (they dont have stats or domain knowledge)
-
-### 2.1 - intRo
-http://www.intro-stats.com
-
-### 2.2 - RV Simulator
-https://erichare.shinyapps.io/discreteRV-shiny
-
-### 2.3 - PeLiCa
-http://www.pelica.org
-
-### 2.4 - Logo Plots
-http://erichare.shinyapps.io/gglogo
-
-### 2.5 - Lineups
-TBD
-
-## Chapter 3 - The Interface Between Statistics and Computer Science
-This chapter covers the Statistical Computation / Data Science portion of my dissertation
-
-### 3.1 - intRopack
-
-### 3.2 - discreteRV
-
-### 3.3 - Peptider
-
-### 3.4 - gglogo
-
-### 3.5 - Lineupgen
-
+1. Read through literature with 2009 report in mind (Careful with how we cite Bachrach - Say it is stated in this paper, not that it has been shown, since the findings are... crap.)
