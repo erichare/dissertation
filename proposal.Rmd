@@ -1,5 +1,5 @@
 ---
-title: "Proposal:"
+title: "Proposal: Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
 author: "Eric Hare"
 date: "June 10, 2016"
 output: pdf_document
@@ -29,4 +29,10 @@ I have focused on three broad areas that can benefit from graphical rather than 
 2. Statistical Education
 3. Visual Inference
 
+Each of these areas, I believe, can benefit significantly from functionality present in R and associated packages. But for the forseeable future, each field will also include a significant number of students, researchers, and scientists that have little-to-no knowledge of R, and will therefore be dissuaded from attempting its use. Working at the interface of Statistics and Computer Science, I will explain the current state of the art in each of these fields, and how a reproducible R and web-based solution can help to address the current shortcomings.
 
+## Forensic Science
+
+## Statistical Education
+
+## Visual Inference
