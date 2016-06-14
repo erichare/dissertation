@@ -28,3 +28,9 @@ Roughly 12 pages other people's work, 3 pages what i will do.
 ## TODO
 
 1. Read through literature with 2009 report in mind (Careful with how we cite Bachrach - Say it is stated in this paper, not that it has been shown, since the findings are... crap.)
+2. Read https://www.researchgate.net/publication/241780159_Development_of_ballistics_identification-from_image_comparison_to_topography_measurement_in_surface_metrology
+3. Put some kind of marker/tags for things to have Heike look at.
+4. Read through full bullet paper (check reference list to make sure all are included)
+5. Update instructions on x3prplus for new database
+6. For degraded paper, check through literature with regards to stats (CMS in particular). Identify the features, program the features. Bring alan on board. Use each feature independently as predicting matching. Stress the algorithm by using different amounts of degradation, see how it changes.
+7. Update CV
