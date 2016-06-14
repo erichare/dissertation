@@ -24,13 +24,14 @@ Roughly 12 pages other people's work, 3 pages what i will do.
     b. The statistics itself - Bullets, composition of a lot of smaller data analysis self. Outline each step, and talk about transparency of the process and getting things online (x3prplus, x3p files). This needs to be a pretty major cultural shift - No more black boxes.
     c. The computer science itself - Interface design. Read "The Design of Everyday Things"
 3. Cover bullets and visual inference literature (about 10 papers for visual inference total)
+
+Read through literature with 2009 report in mind (Careful with how we cite Bachrach - Say it is stated in this paper, not that it has been shown)
     
 ## TODO
 
-1. Read through literature with 2009 report in mind (Careful with how we cite Bachrach - Say it is stated in this paper, not that it has been shown, since the findings are... crap.)
-2. Read https://www.researchgate.net/publication/241780159_Development_of_ballistics_identification-from_image_comparison_to_topography_measurement_in_surface_metrology
-3. Put some kind of marker/tags for things to have Heike look at.
-4. Read through full bullet paper (check reference list to make sure all are included)
-5. Update instructions on x3prplus for new database
-6. For degraded paper, check through literature with regards to stats (CMS in particular). Identify the features, program the features. Bring alan on board. Use each feature independently as predicting matching. Stress the algorithm by using different amounts of degradation, see how it changes.
-7. Update CV
+1. Read https://www.researchgate.net/publication/241780159_Development_of_ballistics_identification-from_image_comparison_to_topography_measurement_in_surface_metrology
+2. Put some kind of marker/tags for things to have Heike look at.
+3. Read through full bullet paper (check reference list to make sure all are included)
+4. DONE Update instructions on x3prplus for new database
+5. For degraded paper, check through literature with regards to stats (CMS in particular). Identify the features, program the features. Bring alan on board. Use each feature independently as predicting matching. Stress the algorithm by using different amounts of degradation, see how it changes.
+6. DONE Update CV
