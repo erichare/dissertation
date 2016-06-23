@@ -80,3 +80,18 @@ Meeting with Bill Eddy
 Slides from Xiao Hui's Talk - John Song was interested. Collaborate with him directly.
 Look at NIST Template for Proposals
 Iowa Crime Lab - Give talk about bullet matching
+
+## Lineup Notes
+
+Big Dream:
+1. Providing lineup service to the public
+
+Organize Framework for generating lineup experiments
+  1. Picture Details -> Database (Link between stimuli and responses + demographics)
+  2. Uploading pictures
+    a. Check feasibility of uploaded images, give warnings
+  3. Sampling Schemes
+    a. Theoretical Framework: Interaction between randomization and stratification
+    b. Simulate in order to check theory
+    c. Provide Examples / Choices
+  4. Provide P-Values based on sampling scheme
