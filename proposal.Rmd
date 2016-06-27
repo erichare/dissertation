@@ -1,9 +1,14 @@
 ---
 title: "Proposal: Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
 author: "Eric Hare"
-date: "June 10, 2016"
+date: \today{}
 output: pdf_document
 bibliography: references.bib
+fontsize: 12pt
+geometry: margin=1in
+header-includes:
+    - \usepackage{setspace}
+    - \doublespacing
 ---
 
 ## Introduction
