@@ -44,8 +44,6 @@ Rifling, manufacturing defects, and impurities in a barrel create striation mark
 
 A modern development in this realm is the adoption of an open format for storing 3D topographical images of bullets in a format called x3p (XML 3-D Surface Profile). The x3p format conforms to the ISO5436-2 standard\footnote{\url{http://sourceforge.net/p/open-gps/mwiki/X3p/}}, implemented to provide a simple and standard conforming way to exchange 2D and 3D profile data. It was adopted by the OpenFMC (Open Forensic Metrology Consortium\footnote{\url{http://www.openfmc.org/}}), a group of academic, industry, and government firearm forensics researchers whose aim is to establish best practices for researchers using metrology in forensic science. Furthermore, NIST (the National Institute for Standards and Technology) is developing a database to allow searching and downloading of these x3p files\footnote{\url{https://tsapps.nist.gov/NRBTD/}}. Although limited to around 70 bullets at the time of this writing, this database in conjuction with open-source software to work with .x3p files opens up a whole new set of possibilities in terms of a statistical foundation for bullet matching.
 
-
-
 ## Statistics Education
 
 ## Visual Inference
