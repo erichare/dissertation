@@ -3,7 +3,10 @@ title: "Proposal: Enabling Scientists to Understand their Data using Web-Based S
 author: "Eric Hare"
 date: "June 10, 2016"
 output: pdf_document
+bibliography: references.bib
 ---
+
+## Introduction
 
 The computing revolution has opened up statistical methods and tools to a broad range of fields. With the growing popularity of R in particular, the wide range of choices of open source statistical routines in the form of packages has significantly expanded statistical computing capabilities. Still, there remains a fundamental obstacle to the use of R. Effective use of R requires a commitment to learning and understanding programming, which some individuals, companies, and researchers may not have the time or desire to do. Furthermore, although the open-source nature of R is one of its biggest assets, it also means that there is a more rapid development cycle than would often be found in more corporate software solutions. This means that R developers must continue to maintain their code while learning new programming concepts.
 
@@ -26,13 +29,25 @@ Because Shiny offers a solution which maintains the benefits of both GUIs and st
 I have focused on three broad areas that can benefit from graphical rather than purely programmatic tools:
 
 1. Forensic Science
-2. Statistical Education
+2. Statistics Education
 3. Visual Inference
 
 Each of these areas, I believe, can benefit significantly from functionality present in R and associated packages. But for the forseeable future, each field will also include a significant number of students, researchers, and scientists that have little-to-no knowledge of R, and will therefore be dissuaded from attempting its use. Working at the interface of Statistics and Computer Science, I will explain the current state of the art in each of these fields, and how a reproducible R and web-based solution can help to address the current shortcomings.
 
 ## Forensic Science
 
-## Statistical Education
+The judicial system would seem to be an especially good candidate for the integration of a statistical approach. In the United States, suspects are considered innocent until proven guilty "beyond a reasonable doubt". This in many ways parallels traditional hypothesis testing approaches, in which a pre-defined cut-off (significance level) is used to determine the threshold at which the null hypothesis is rejected (which presumably should occur once the evidence leads us beyond a reasonable doubt). 
+
+But such probabilistic thinking doesn't always occur. In particular, bullet matching, or the process of determining whether two bullets were fired from the same gun barrel, has been the subject of intense scrutiny in the past 15 years. In 2005, in *United States vs. Green*, the court ruled that the forensic expert in question could not confirm that the bullet casings came from a specific weapon with certainty, but could merely "describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011]. This scrutiny culminated in the 2009 National Academy of Sciences report questioning the scientific validity of many forensic methods including firearm examination. The report states that "[m]uch forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline" [@NAS:2009].
+
+Rifling, manufacturing defects, and impurities in a barrel create striation marks on the bullet during the firing process. These marks are assumed to be unique to the barrel, as described in a 1992 AFTE article [@afte:1992]. Current standard practice for bullet matching relies in part on the assessment of the so-called maximum number of consecutively matching striae (CMS), first defined by @biasotti:1959. One of the primary issues with this procedure is that a human inspection to determine CMS is subjective [@miller:1998]. Human inspection also requires on-site analysis of the bullets, which can be costly and time-consuming, and introduces the potential for differing opinions across different forensic examiners.
+
+A modern development in this realm is the adoption of an open format for storing 3D topographical images of bullets in a format called x3p (XML 3-D Surface Profile). The x3p format conforms to the ISO5436-2 standard\footnote{\url{http://sourceforge.net/p/open-gps/mwiki/X3p/}}, implemented to provide a simple and standard conforming way to exchange 2D and 3D profile data. It was adopted by the OpenFMC (Open Forensic Metrology Consortium\footnote{\url{http://www.openfmc.org/}}), a group of academic, industry, and government firearm forensics researchers whose aim is to establish best practices for researchers using metrology in forensic science. Furthermore, NIST (the National Institute for Standards and Technology) is developing a database to allow searching and downloading of these x3p files\footnote{\url{https://tsapps.nist.gov/NRBTD/}}.
+
+## Statistics Education
 
 ## Visual Inference
+
+## Conclusion
+
+## References
