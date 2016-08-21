@@ -2,7 +2,12 @@
 title: "Proposal: Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
 author: "Eric Hare"
 date: \today{}
-output: pdf_document
+knit: "bookdown::render_book"
+output:
+  bookdown::gitbook:
+    lib_dir: "book_assets"
+  bookdown::pdf_book:
+    keep_tex: yes
 bibliography: references.bib
 fontsize: 12pt
 geometry: margin=1in
@@ -51,7 +56,11 @@ A modern development in this realm is the adoption of an open format for storing
 
 The feasibility of creating a database of ballistic images that could be used to identify guns used in crimes was evaluated in a 2008 report by the National Research Council [@nap:2008]. The evaluation investigated the scalability of NIBIN (National Integrated Ballistic Information Network), which uses proprietary matching algorithms provided by IBIS. The bottom line of the report was that in spite of the many technical and practical hurdles, solutions to all but one problem could be found. The problem that remained is that statistically, the quality of the matching algorithm (in this case, of breech-face marks and firing pin impressions) could not withstand a hugely increased number of records while still maintaining a reasonable workload for forensic examiners, who have to examine possible matches suggested by the system.
 
-With this in mind, I'm proposing a modern bullet matching framework, written in R, which uses open and transparent statistical techniques to arrive at a predicted probability of a match at the bullet land level. This framework will be provided as an R package with an associated web frontend. The web frontend will allow forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display will include a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers.
+With this in mind, I'm proposing a modern bullet matching framework, written in R, which uses open and transparent statistical techniques to arrive at a predicted probability of a match at the bullet land level. This framework will be provided as an R package with an associated web frontend. The web frontend will allow forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display will include a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \@ref(fig:bullets-app). displays a prototype user interface for this algorithm.
+
+```{r bullets-app, echo=FALSE, fig.cap='Prototype user interface for the bullet matching algorithm.'}
+knitr::include_graphics(rep("images/bullets_app.png"))
+```
 
 ## Statistics Education
 
@@ -59,7 +68,11 @@ The widespread adoption of R [@r-stat] as a tool for statistical analysis has un
 
 Multiple software packages have recently been written in an attempt to spur interest in  R programming and statistics. DataCamp's [@datacamp] courses are user-friendly ways to learning basic R programming and data analysis techniques. Swirl [@swirl] is a similar interactive tool to make learning R more fun by learning it within R itself. Project MOSAIC [@mosaic] has created a suite of tools to simplify the teaching of statistics in the form of an R package. The primary goal of DataCamp and Swirl is to teach R programming, rather than facilitate the learning of introductory statistics. Project MOSAIC's goal is to faciliate this learning, but using the package requires a knowledge of R programming that the introductory student may not have. R Commander [@fox2005] and Deducer [@fellows2012] provide a graphical front-end to many statistical functions in R, but are not web-based and thus require local installation and configuration. iNZight Lite [@inzight] also attempts to expose students to data analysis without requiring programming knowledge, but does not include reproducible R code, and therefore has less of a focus on spurring interest in coding for students.
 
-Upon the release of RStudio's Shiny [@shiny] it became easier for an R-based analysis to be converted to an interactive web application. Shiny helps generate modern, fluid web applications which scale to different device sizes, requiring only a browser to access. Because of this, it targets some of the issues of pre-existing statistical software. Software written in Shiny requires no installation, no licenses, and no knowledge of programming. With that in mind, a modern statistical software program aimed at supplementing an introductory statistics class could prove very useful. We call this software **intRo**.
+Upon the release of RStudio's Shiny [@shiny] it became easier for an R-based analysis to be converted to an interactive web application. Shiny helps generate modern, fluid web applications which scale to different device sizes, requiring only a browser to access. Because of this, it targets some of the issues of pre-existing statistical software. Software written in Shiny requires no installation, no licenses, and no knowledge of programming. With that in mind, a modern statistical software program aimed at supplementing an introductory statistics class could prove very useful. We call this software **intRo**. Figure \@ref(fig:intro-app). displays the default **intRo** user interface.
+
+```{r intro-app, echo=FALSE, fig.cap='Default user interface for the intRo application.'}
+knitr::include_graphics(rep("images/intro_app.png"))
+```
 
 There are two primary guiding principles behind the design of **intRo**. The first is modularity. For software to maintain simplicity, it should not overload the user with options. But for software to remain flexible enough to be used by a wide variety of universities, options must be available. We've addressed this seeming contradiction by building each piece of functionality as a *module*. Modules are self-contained sets of R scripts which define the user interface, the functionality, and the output of a particular set of statistical functions in **intRo**. Modules can be dynamically included or removed at runtime by an instructor, presenting to the user a minimal set of options relevant to their particular classroom setting.
 
@@ -71,7 +84,11 @@ While **intRo** has been stable in development for some time, there is some majo
 
 The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical]. This technique was extensively explored by @majumder2013. As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk. This framework has been a significant development in visual inference research, enabling experiments such as XXX (list of experiments) XXX.
 
-I propose a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic based on the blocking factors of the lineups used.
+I propose a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic based on the blocking factors of the lineups used. A prototype user interface is shown in Figure \@ref(fig:lineups-app). displays a prototype user interface.
+
+```{r lineups-app, echo=FALSE, fig.cap='Prototype user interface for the lineups web application.'}
+knitr::include_graphics(rep("images/lineups_app.png"))
+```
 
 ## Conclusion
 
