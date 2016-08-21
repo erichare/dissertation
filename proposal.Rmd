@@ -69,7 +69,7 @@ While **intRo** has been stable in development for some time, there is some majo
 
 ## Visual Inference
 
-The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical].
+The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical]. This technique was extensively explored by @majumder2013. As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk. I propose a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic based on the blocking factors of the lineups used.
 
 ## Conclusion
 
