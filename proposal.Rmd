@@ -84,7 +84,7 @@ While **intRo** has been stable in development for some time, there is some majo
 
 The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical]. This technique was extensively explored by @majumder2013. As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk. This framework has been a significant development in visual inference research, enabling experiments such as XXX (list of experiments) XXX.
 
-I propose a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic based on the blocking factors of the lineups used. A prototype user interface is shown in Figure \@ref(fig:lineups-app). displays a prototype user interface.
+I propose a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic of interest based on the blocking factors of the lineups used. A prototype user interface is shown in Figure \@ref(fig:lineups-app). displays a prototype user interface.
 
 ```{r lineups-app, echo=FALSE, fig.cap='Prototype user interface for the lineups web application.'}
 knitr::include_graphics(rep("images/lineups_app.png"))
