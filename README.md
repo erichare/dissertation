@@ -35,6 +35,14 @@ Read through literature with 2009 report in mind (Careful with how we cite Bachr
 4. Proposal will have bullet paper as pdf. Literally paste it at the end.
 5. Dissertation: Chapter 0 (Lit Review, proposal). Each application will be 1 chapter. Chapter X at the end will be a conclusion, outcome, high level. Future work as well in this chapter.
 
+## Bullet Notes
+
+For meeting with Dr. De Brebanter:
+
+1. Advice on smoothing method. Gaussian filter with a long pass and a short pass vs. Show Shiny app.
+2. Width/height/angle of striae, how to account for that
+3. Overall dissertation structure
+
 ## Lineup Notes
 
 Big Dream: Providing lineup service to the public
