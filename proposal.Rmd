@@ -46,6 +46,8 @@ Each of these areas, I believe, can benefit significantly from functionality pre
 
 ## Forensic Science
 
+XXX Cite all the features, table of features vs from literature XXX
+
 The judicial system would seem to be an especially good candidate for the integration of a statistical approach. In the United States, suspects are considered innocent until proven guilty "beyond a reasonable doubt". This in many ways parallels traditional hypothesis testing approaches, in which a pre-defined cut-off (significance level) is used to determine the threshold at which the null hypothesis is rejected (which presumably should occur once the evidence leads us beyond a reasonable doubt). 
 
 But such probabilistic thinking doesn't always occur. In particular, bullet matching, or the process of determining whether two bullets were fired from the same gun barrel, has been the subject of intense scrutiny in the past 15 years. In 2005, in *United States vs. Green*, the court ruled that the forensic expert in question could not confirm that the bullet casings came from a specific weapon with certainty, but could merely "describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011]. This scrutiny culminated in the 2009 National Academy of Sciences report questioning the scientific validity of many forensic methods including firearm examination. The report states that "[m]uch forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline" [@NAS:2009].
@@ -81,6 +83,8 @@ The second guiding principle is reproducibility. While we wrote **intRo** to be 
 While **intRo** has been stable in development for some time, there is some major work that must be done in order to see a wider adoption. In particular, the procedure for creating and deploying new **intRo** modules is currently a black box. It is a bit cumbersome, and some streamlining can be done in order to make it both easier and faster to do. There is also a rather limited set of functionality available at this stage. The lack of functionality can be remedied by creating an official repository of modules, which would also serve as examples for developers wishing to create their own modules.
 
 ## Visual Inference
+
+XXX Lay out EXACTLY what visual inference is, pull out type I, type II, power. Cite the papers where its shown this really works. Thorough introduction from the basics. Hypothesis testing 101 (P-Value, power, errors, etc). Talk about right decisions for the wrong reason. (Which is why we ask). Rather than cite dissertation, cite Arxiv paper. XXX
 
 The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical]. This technique was extensively explored by @majumder2013. As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk. This framework has been a significant development in visual inference research, enabling experiments such as XXX (list of experiments) XXX.
 
