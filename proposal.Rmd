@@ -66,6 +66,17 @@ knitr::include_graphics(rep("images/bullets_app.png"))
 
 This will not be the first automatic system [@xie:2009, @riva:2014, @bachrach:2002]. But it will be the first that uses a publicly accessible database, includes fully reproducible results, and uses a broad set of derived features to produce probabilities or scores based on a machine learning algorithm. Critical to the success of this algorithm will be the extraction of this set of features describing a bullet signature. In addition to the aforementioned CMS, the CCF will be used, as it has for other bullet matching applications [@vorburger:2011].
 
+```{r, echo=FALSE}
+mydf <- data.frame(Feature = c("CCF", "CMS", "CNMS", "Matches", "Non-Matches", "D", "S"),
+                   Ours = c(1:7),
+                   Literature = c(1:7),
+                   Notes = c(1:7))
+knitr::kable(
+  mydf, booktabs = TRUE,
+  caption = 'A table of the extracted bullet signature features compared with the literature.'
+)
+```
+
 ## Statistics Education
 
 The widespread adoption of R [@r-stat] as a tool for statistical analysis has undoubtedly been an important development for the scientific community. However, using R in most cases still requires a basic knowledge of programming concepts which may pose a steep learning curve for the introductory statistics student [@5359977]. This additional time commitment may explain why introductory courses often utilize point-and-click applications, even if the instructor himself/herself uses R in their own work. Still, some compromises must be made when using many graphical applications, including dealing with software licenses and unsupported desktop platforms.
