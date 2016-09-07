@@ -20,6 +20,7 @@ header-includes:
 
 1. Don't say I'm "proposing a framework". Just say what we're doing in order to address this. Say it was submitted and under review by AAOS. Show what I've already done rather than just "proposing" it. "We have been investigating the properites of different features extracted from...."
 2. For matches, go into more detail. Congruent matching squares.
+3. For Slides: First few, about me (Undergrad background, masters, PhD, when i want to graduate). Then overview of whole dissertation / areas, then pick ONE and go into depth... this will be most of the presentation. Then other projects, one slide for each - multiple for intRo, one for lineups (Where do i want to go?). Timeline, ending with graduation. Put deliverables on timeline (what, when.) Print out slides for each committee member. Other work slide (publications, awards)
 
 ## Introduction
 
