@@ -27,21 +27,12 @@ Roughly 12 pages other people's work, 3 pages what i will do.
 
 Read through literature with 2009 report in mind (Careful with how we cite Bachrach - Say it is stated in this paper, not that it has been shown)
     
-## TODO (8/22/2016)
+## TODO (9/9/2016)
 
-1. DONE Email Mike about RStudio Server and CC Heike
-2. DONE Send out whenisgood for committee, two hour blocks, week of September 19th (Ask Jess when prelim form needs to be submitted). Proposal goes out a week ahead of exam.
-3. Prepare slide deck for prelim - begin with background academic info, focus on one of the papers, sketch out other two. Timeline for other papers, what i'm going to work on. 40 minutes approximately.
-4. Proposal will have bullet paper as pdf. Literally paste it at the end.
-5. Dissertation: Chapter 0 (Lit Review, proposal). Each application will be 1 chapter. Chapter X at the end will be a conclusion, outcome, high level. Future work as well in this chapter.
-
-## Bullet Notes
-
-For meeting with Dr. De Brebanter:
-
-1. Advice on smoothing method. Gaussian filter with a long pass and a short pass vs. Show Shiny app.
-2. Width/height/angle of striae, how to account for that
-3. Overall dissertation structure
+1. For Slides: First few, about me (Undergrad background, masters, PhD, when i want to graduate). Then overview of whole dissertation / areas, then pick ONE and go into depth... this will be most of the presentation. Then other projects, one slide for each - multiple for intRo, one for lineups (Where do i want to go?). Timeline, ending with graduation. Put deliverables on timeline (what, when.) Print out slides for each committee member. Other work slide (publications, awards)
+2. Prepare slide deck for prelim - begin with background academic info, focus on one of the papers, sketch out other two. Timeline for other papers, what i'm going to work on. 40 minutes approximately.
+3. Proposal will have bullet paper and intRo as pdf. Literally paste it at the end.
+4. Dissertation: Chapter 0 (Lit Review, proposal). Each application will be 1 chapter. Chapter X at the end will be a conclusion, outcome, high level. Future work as well in this chapter.
 
 ## Lineup Notes
 

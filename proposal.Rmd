@@ -4,8 +4,6 @@ author: "Eric Hare"
 date: \today{}
 knit: "bookdown::render_book"
 output:
-  bookdown::gitbook:
-    lib_dir: "book_assets"
   bookdown::pdf_book:
     keep_tex: yes
 bibliography: references.bib
@@ -15,12 +13,6 @@ header-includes:
     - \usepackage{setspace}
     - \doublespacing
 ---
-
-## TODO
-
-1. Don't say I'm "proposing a framework". Just say what we're doing in order to address this. Say it was submitted and under review by AAOS. Show what I've already done rather than just "proposing" it. "We have been investigating the properites of different features extracted from...."
-2. For matches, go into more detail. Congruent matching squares.
-3. For Slides: First few, about me (Undergrad background, masters, PhD, when i want to graduate). Then overview of whole dissertation / areas, then pick ONE and go into depth... this will be most of the presentation. Then other projects, one slide for each - multiple for intRo, one for lineups (Where do i want to go?). Timeline, ending with graduation. Put deliverables on timeline (what, when.) Print out slides for each committee member. Other work slide (publications, awards)
 
 ## Introduction
 
@@ -52,8 +44,6 @@ Each of these areas, I believe, can benefit significantly from functionality pre
 
 ## Forensic Science
 
-XXX Cite all the features, table of features vs from literature XXX
-
 The judicial system would seem to be an especially good candidate for the integration of a statistical approach. In the United States, suspects are considered innocent until proven guilty "beyond a reasonable doubt". This in many ways parallels traditional hypothesis testing approaches, in which a pre-defined cut-off (significance level) is used to determine the threshold at which the null hypothesis is rejected (which presumably should occur once the evidence leads us beyond a reasonable doubt). 
 
 But such probabilistic thinking doesn't always occur. In particular, bullet matching, or the process of determining whether two bullets were fired from the same gun barrel, has been the subject of intense scrutiny in the past 15 years. In 2005, in *United States vs. Green*, the court ruled that the forensic expert in question could not confirm that the bullet casings came from a specific weapon with certainty, but could merely "describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011]. This scrutiny culminated in the 2009 National Academy of Sciences report questioning the scientific validity of many forensic methods including firearm examination. The report states that "[m]uch forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline" [@NAS:2009].
@@ -64,13 +54,13 @@ A modern development in this realm is the adoption of an open format for storing
 
 The feasibility of creating a database of ballistic images that could be used to identify guns used in crimes was evaluated in a 2008 report by the National Research Council [@nap:2008]. The evaluation investigated the scalability of NIBIN (National Integrated Ballistic Information Network), which uses proprietary matching algorithms provided by IBIS. The bottom line of the report was that in spite of the many technical and practical hurdles, solutions to all but one problem could be found. The problem that remained is that statistically, the quality of the matching algorithm (in this case, of breech-face marks and firing pin impressions) could not withstand a hugely increased number of records while still maintaining a reasonable workload for forensic examiners, who have to examine possible matches suggested by the system.
 
-With this in mind, I'm proposing a modern bullet matching framework, written in R, which uses open and transparent statistical techniques to arrive at a predicted probability of a match at the bullet land level. This framework will be provided as an R package with an associated web frontend. The web frontend will allow forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display will include a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \@ref(fig:bullets-app). displays a prototype user interface for this algorithm.
+With this in mind, we have developed an automated matching routine, written in R, which uses open and transparent statistical techniques to arrive at a predicted probability of a match at the bullet land level. This framework is provided as an R package called x3prplus [@x3prplus] with an associated web frontend. The web frontend allows forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display includes a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \@ref(fig:bullets-app). displays a prototype user interface for this algorithm.
 
 ```{r bullets-app, echo=FALSE, fig.cap='Prototype user interface for the bullet matching algorithm.'}
 knitr::include_graphics(rep("images/bullets_app.png"))
 ```
 
-This will not be the first automatic system [@xie:2009, @riva:2014, @bachrach:2002]. But it will be the first that uses a publicly accessible database, includes fully reproducible results, and uses a broad set of derived features to produce probabilities or scores based on a machine learning algorithm. Critical to the success of this algorithm will be the extraction of this set of features describing a bullet signature. In addition to the aforementioned CMS, the CCF will be used, as it has for other bullet matching applications [@vorburger:2011].
+This will not be the first automatic system [@xie:2009, @riva:2014, @bachrach:2002]. But it will be the first that uses a publicly accessible database, includes fully reproducible results, and uses a broad set of derived features to produce probabilities or scores based on a machine learning algorithm. Critical to the success of this algorithm will be the extraction of this set of features describing a bullet signature. In addition to the aforementioned CMS, the CCF will be used, as it has for other bullet matching applications [@vorburger:2011]. Traditional bullet matching methods have used strict cutoffs (for instance, 6 CMS) to determine a match versus a non-match. We are aiming to be more robust in using a number of features and deriving conditional probabilities of matches given particular values of these features.
 
 ```{r, echo=FALSE}
 mydf <- data.frame(Feature = c("CCF", "CMS", "CNMS", "Matches", "Non-Matches", "D", "S"),
@@ -82,6 +72,8 @@ knitr::kable(
   caption = 'A table of the extracted bullet signature features compared with the literature.'
 )
 ```
+
+This work has been submitted and accepted (with revisions) by the Annals of Applied Statistics. We are following up by investigating the properties of different features as applied to degraded bullets, and when compared with common cut-offs for match, non-match, and inconclusive from the literature.
 
 ## Statistics Education
 
@@ -97,9 +89,11 @@ knitr::include_graphics(rep("images/intro_app.png"))
 
 There are two primary guiding principles behind the design of **intRo**. The first is modularity. For software to maintain simplicity, it should not overload the user with options. But for software to remain flexible enough to be used by a wide variety of universities, options must be available. We've addressed this seeming contradiction by building each piece of functionality as a *module*. Modules are self-contained sets of R scripts which define the user interface, the functionality, and the output of a particular set of statistical functions in **intRo**. Modules can be dynamically included or removed at runtime by an instructor, presenting to the user a minimal set of options relevant to their particular classroom setting.
 
-The second guiding principle is reproducibility. While we wrote **intRo** to be accessible to users of all computer skill levels, we still recognize that there is significant value in programming. In particular, R scripts can be shared, reproduced, and the results regenerated. We built in these reproducibility concepts to **intRo**. The results generated in an **intRo** session are automatically converted into reproducible R code. Each point-and-click action is transcribed, and the results visible in **intRo** will match the results produced by the R code at the bottom of the page. This overcomes a common limitation of GUIs in that typically results are not reproducible. XXX There does exist a caveat to this reproducibility, however. **intRo** makes use of some basic interactive graphics routines through the incorporation of the ggvis  package [@ggvis]. In particular, hovering on points in a scatterplot will produce tooltips indicating the exact values of $x$ and $y$ in the plot. However, this hovering action is not reproduced in code. Some recent research is being done in this area [e.g., @stevens2010holoviews], but **intRo** is not currently utilizing these methods. XXX
+The second guiding principle is reproducibility. While we wrote **intRo** to be accessible to users of all computer skill levels, we still recognize that there is significant value in programming. In particular, R scripts can be shared, reproduced, and the results regenerated. We built in these reproducibility concepts to **intRo**. The results generated in an **intRo** session are automatically converted into reproducible R code. Each point-and-click action is transcribed, and the results visible in **intRo** will match the results produced by the R code at the bottom of the page. This overcomes a common limitation of GUIs in that typically results are not reproducible. There does exist a caveat to this reproducibility, however. **intRo** makes use of some basic interactive graphics routines through the incorporation of the ggvis  package [@ggvis]. In particular, hovering on points in a scatterplot will produce tooltips indicating the exact values of $x$ and $y$ in the plot. However, this hovering action is not reproduced in code. Some recent research is being done in this area [e.g., @stevens2010holoviews], but **intRo** is not currently utilizing these methods.
 
 While **intRo** has been stable in development for some time, there is some major work that must be done in order to see a wider adoption. In particular, the procedure for creating and deploying new **intRo** modules is currently a black box. It is a bit cumbersome, and some streamlining can be done in order to make it both easier and faster to do. There is also a rather limited set of functionality available at this stage. The lack of functionality can be remedied by creating an official repository of modules, which would also serve as examples for developers wishing to create their own modules.
+
+This work has been submitted and accepted (with revisions) by the Journal of Computational and Graphical Statistics. In this paper, we focus on intRo as a case study in the development of a modular, extensible, and web-based statistical software application, which allows the results generated to be seamlessly reproduced in R code.
 
 ## Visual Inference
 
