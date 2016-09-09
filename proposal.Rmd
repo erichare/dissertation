@@ -11,6 +11,7 @@ fontsize: 12pt
 geometry: margin=1in
 header-includes:
     - \usepackage{setspace}
+    - \usepackage{pdfpages}
     - \doublespacing
 ---
 
@@ -56,7 +57,7 @@ The feasibility of creating a database of ballistic images that could be used to
 
 With this in mind, we have developed an automated matching routine, written in R, which uses open and transparent statistical techniques to arrive at a predicted probability of a match at the bullet land level. This framework is provided as an R package called x3prplus [@x3prplus] with an associated web frontend. The web frontend allows forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display includes a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \@ref(fig:bullets-app). displays a prototype user interface for this algorithm.
 
-```{r bullets-app, echo=FALSE, fig.cap='Prototype user interface for the bullet matching algorithm.'}
+```{r bullets-app, echo=FALSE, fig.cap='Prototype user interface for the bullet matching algorithm.', fig.pos='H'}
 knitr::include_graphics(rep("images/bullets_app.png"))
 ```
 
@@ -83,7 +84,7 @@ Multiple software packages have recently been written in an attempt to spur inte
 
 Upon the release of RStudio's Shiny [@shiny] it became easier for an R-based analysis to be converted to an interactive web application. Shiny helps generate modern, fluid web applications which scale to different device sizes, requiring only a browser to access. Because of this, it targets some of the issues of pre-existing statistical software. Software written in Shiny requires no installation, no licenses, and no knowledge of programming. With that in mind, a modern statistical software program aimed at supplementing an introductory statistics class could prove very useful. We call this software **intRo**. Figure \@ref(fig:intro-app). displays the default **intRo** user interface.
 
-```{r intro-app, echo=FALSE, fig.cap='Default user interface for the intRo application.'}
+```{r intro-app, echo=FALSE, fig.cap='Default user interface for the intRo application.', fig.pos='H'}
 knitr::include_graphics(rep("images/intro_app.png"))
 ```
 
@@ -101,14 +102,28 @@ XXX Lay out EXACTLY what visual inference is, pull out type I, type II, power. C
 
 A major aspect of exploratory data analysis is producing graphical displays, which help draw attention to patterns in data. Graphical displays are even used for model assessment. Ultimately, a graphical display is a statistic, or some function of the data. Unlike a traditional hypothesis test setting, however, a graphical display does not have a clearly defined reference distribution from which comparisons can be made (contrast this with, for instance, a statistic such as the sample mean for large samples which is asymptotically normally distributed under regularity conditions) This makes the identification of "significant" features of a graphical display far more challenging.
 
-The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical]. This technique was extensively explored by @majumder2013. As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk. This framework has been a significant development in visual inference research, enabling experiments such as XXX (list of experiments) XXX.
+The lineup protocol is an inferential framework which acts as an exploratory data analysis corrolary to traditional hypothesis testing [@buja2009statistical]. This technique was extensively explored by @majumder2013. The lineup protocol 
+
+As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk. This framework has been a significant development in visual inference research, enabling experiments such as XXX (list of experiments) XXX.
 
 I propose a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic of interest based on the blocking factors of the lineups used. A prototype user interface is shown in Figure \@ref(fig:lineups-app). displays a prototype user interface.
 
-```{r lineups-app, echo=FALSE, fig.cap='Prototype user interface for the lineups web application.'}
+```{r lineups-app, echo=FALSE, fig.cap='Prototype user interface for the lineups web application.', fig.pos='H'}
 knitr::include_graphics(rep("images/lineups_app.png"))
 ```
 
 ## Conclusion
+
+## Bullets Paper
+
+The following is the current revision of the bullets paper, submitted and accepted by the Annals of Applied Statistics.
+
+\includepdf[pages=-]{imaging-paper.pdf}
+
+## intRo Paper
+
+The following is the current revision of the intRo paper, submitted and accepted by the Journal of Computational and Graphical Statistics.
+
+\includepdf[pages=-]{paper.pdf}
 
 ## References
