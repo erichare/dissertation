@@ -98,7 +98,14 @@ The lineup protocol is an inferential framework which acts as an exploratory dat
 
 This protocol has been applied to a wide variety of situations. It has been used in order to identify the features of Q-Q plots which are most relevant, in particular to show that in certain cases detrended Q-Q plots are more powerful than their trended counterparts [@Loy:2016dqa]. Lineups have been shown to compare favorably with more traditional tests in the context of a linear model as well. @Majumder:2013ie demonstrated this, as well as showing that there are cases in which visual tests yield higher power than traditional tests, such as when the effect size is large. Lineups have also been used to assess the power of competing graphical designs [@Hofmann:tvcg:12].
 
-As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk [@majumder2013]. This framework has been a significant development in visual inference research, enabling experiments such as XXX (list of experiments) XXX. We have begun the development of a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic of interest based on the blocking factors of the lineups used. A prototype user interface is shown in Figure \@ref(fig:lineups-app).
+As part of this work, a web framework was developed in order to conduct lineup studies on Amazon Mechanical Turk [@majumder2013]. This framework has been a significant development in visual inference research, enabling experiments\footnote{\url{http://www.public.iastate.edu/~hofmann/experiments.html}} such as:
+
+* Diagnostics for hierarchical linear models
+* Testing for expression difference in RNA-Seq data
+* Variations of Q-Q plots
+* The Sine Illusion
+
+We have begun the development of a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic of interest based on the blocking factors of the lineups used. As part of my work, I intend to work with Dr. Cook, Dr. Hofmann, and others, in order to focus on much of the underlying theory in cases where the distribution of null plots is not as easily defined, or multiple factors are varied in a single lineup. Researchers will then be able to use their own data to develop lineup studies, with observers recruited according to the demographics needed. A prototype user interface is shown in Figure \@ref(fig:lineups-app).
 
 ```{r lineups-app, echo=FALSE, fig.cap='Prototype user interface for the lineups web application.', fig.pos='H'}
 knitr::include_graphics(rep("images/lineups_app.png"))
