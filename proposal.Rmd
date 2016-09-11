@@ -42,7 +42,7 @@ I have focused on three broad areas that can benefit from graphical rather than 
 2. Statistics Education
 3. Visual Inference
 
-Each of these areas, I believe, can benefit significantly from functionality present in R and associated packages. But for the forseeable future, each field will also include a significant number of students, researchers, and scientists that have little-to-no knowledge of R, and will therefore be dissuaded from attempting its use. Working at the interface of Statistics and Computer Science, I will explain the current state of the art in each of these fields, and how a reproducible R and web-based solution can help to address the current shortcomings.
+Each of these areas, I believe, can benefit significantly from functionality present in R and associated packages. But for the forseeable future, each field will also include a significant number of students, researchers, and scientists that have little-to-no knowledge of R, and will therefore be dissuaded from attempting its use. Each chapter includes an associated open-source R package, published on GitHub, documenting the algorithms and procedures used [@x3prplus, @intRopkg, @lineupspkg]. Each chapter also includes a web-based frontend accessible to those without programming knowledge \footnote{\url{https://erichare.shinyapps.io/x3prplus}} \footnote{\url{https://www.intro-stats.com}} \footnote{\url{https://bill.shinyapps.io/lineups}}. Working at the interface of Statistics and Computer Science, I will explain the current state of the art in each of these fields, and how a reproducible R and web-based solution can help to address the current shortcomings.
 
 ## Forensic Science
 
@@ -112,13 +112,13 @@ knitr::include_graphics(rep("images/lineups_app.png"))
 
 ## Bullets Paper
 
-The following is the current revision of the bullets paper, submitted and accepted by the Annals of Applied Statistics.
+The following is the current revision of the bullets paper, submitted to the Annals of Applied Statistics.
 
 \includepdf[pages=-]{imaging-paper.pdf}
 
 ## intRo Paper
 
-The following is the current revision of the intRo paper, submitted and accepted by the Journal of Computational and Graphical Statistics.
+The following is the current revision of the intRo paper, submitted to the Journal of Computational and Graphical Statistics.
 
 \includepdf[pages=-]{paper.pdf}
 
