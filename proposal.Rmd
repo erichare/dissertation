@@ -1,7 +1,6 @@
 ---
-title: "Proposal: Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
+title: "Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
 author: "Eric Hare"
-date: \today{}
 knit: "bookdown::render_book"
 output:
   bookdown::pdf_book:
