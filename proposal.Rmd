@@ -119,11 +119,13 @@ As part of this work, a web framework was developed in order to conduct lineup s
 * Variations of Q-Q plots
 * The Sine Illusion
 
-We have begun the development of a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic of interest based on the blocking factors of the lineups used. As part of my work, I intend to work with Dr. Cook, Dr. Hofmann, and others, in order to focus on much of the underlying theory in cases where the distribution of null plots is not as easily defined, or multiple factors are varied in a single lineup. Researchers will then be able to use their own data to develop lineup studies, with observers recruited according to the demographics needed. A prototype user interface is shown in Figure \@ref(fig:lineups-app).
+The basic limitation of this current framework is its accessibility to researchers. While studies could be deployed, the process involved manually modifying a repository of PHP files and defining the relevant randomization schemes in PHP code. With the broad applicability of the lineup protocol, it is important that a service like this be available to all, not just those with the requisite programming skills. Hence, we have begun the development of a modernization of this framework which allows researchers to more seamlessly deploy studies, while automatically deriving the distribution of the test statistic of interest based on the blocking factors of the lineups used. As part of my work, I intend to work with Dr. Cook, Dr. Hofmann, and others, in order to focus on much of the underlying theory in cases where the distribution of null plots is not as easily defined, or multiple factors are varied in a single lineup. Researchers will then be able to use their own data to develop lineup studies, with observers recruited according to the demographics needed. A prototype user interface is shown in Figure \@ref(fig:lineups-app).
 
 ```{r lineups-app, echo=FALSE, fig.align='center', fig.cap='Prototype user interface for the lineups web application.', fig.pos='H'}
 knitr::include_graphics(rep("images/lineups_app.png"))
 ```
+
+Using an interface similar to this prototype, researchers and scientists will be able to define the parameters of the experiment (number of lineups, randomization scheme, strata, etc.), upload the lineups generated from package `nullabor` [@nullabor], recruit observers, and obtain the results of the experiment seamlessly. We have already successfully deployed lineup studies using a portion of this framework. We have modernized the aforementioned PHP framework to an R and Shiny based scheme which can be easily deployed. The next steps are the administration and service side, so that researchers can create these studies without the current manual process that is necessary. 
 
 \newpage
 
@@ -140,6 +142,18 @@ knitr::include_graphics(rep("images/lineups_app.png"))
 \includepdf[pages=-]{paper.pdf}
 
 # Visual Inference
+
+*This work is in progress*
+
+Rough Outline:
+
+1. Introduction to Visual Inference
+2. Background (Current study deployment methods)
+3. New Framework
+    a. Observers
+    b. Researchers
+4. Limitations/Future Work
+5. Conclusion
 
 # Conclusion
 
