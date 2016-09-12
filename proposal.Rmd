@@ -6,6 +6,9 @@ knit: "bookdown::render_book"
 output:
   bookdown::pdf_book:
     keep_tex: yes
+    includes:
+        before_body: body.tex
+        after_body: includes.tex
 bibliography: references.bib
 fontsize: 12pt
 geometry: margin=1in
@@ -16,7 +19,9 @@ header-includes:
     - \doublespacing
 ---
 
-## Introduction
+\newpage
+
+# Introduction
 
 The computing revolution has opened up statistical methods and tools to a broad range of fields. With the growing popularity of R [@R] in particular, the wide range of choices of open source statistical routines in the form of packages has significantly expanded statistical computing capabilities. Still, there remains a fundamental obstacle to the use of R. Effective use of R requires a commitment to learning and understanding programming, which some individuals, companies, and researchers may not have the time or desire to do. Furthermore, although the open-source nature of R is one of its biggest assets, it also means that there is a more rapid development cycle than would often be found in more corporate software solutions. This means that R developers must continue to maintain their code while learning new programming concepts.
 
@@ -39,8 +44,6 @@ Because Shiny offers a solution which maintains the benefits of both GUIs and st
 In my work, I have focused on three broad areas that can benefit from graphical rather than purely programmatic tools. These areas are forensic science, statistical education, and visual inference. Each of these areas, I believe, can benefit significantly from functionality present in R and associated packages. But for the forseeable future, each field will also include a significant number of students, researchers, and scientists that have little-to-no knowledge of R, and will therefore be dissuaded from attempting its use. Each chapter includes an associated open-source R package, published on GitHub, documenting the algorithms and procedures used [@x3prplus, @intRopkg, @lineupspkg]. Each chapter also includes a web-based frontend accessible to those without programming knowledge \footnote{\url{https://erichare.shinyapps.io/x3prplus}} \footnote{\url{https://www.intro-stats.com}} \footnote{\url{https://bill.shinyapps.io/lineups}}. Working at the interface of Statistics and Computer Science, I will explain the current state of the art in each of these fields, and how a reproducible R and web-based solution can help to address the current shortcomings. At the conclusion of this proposal document are papers corresponding to the first two chapers. **Automatic Matching of Bullet Lands** has been submitted to the Annals of Applied Statistics, and **Designing Modular Software: A Case Study in Introductory Statistics** has been submitted to the Journal of Computational and Graphical Statistics.
 
 ## Forensic Science
-
-*This work is part of the Center for Statistics and Applications in Forensic Evidence. It was joint work with Dr. Heike Hofmann and Dr. Alicia Carriquiry. The paper is titled **Automatic Matching of Bullet Lands** and has been submitted to the Annals of Applied Statistics.*
 
 The judicial system would seem to be an especially good candidate for the integration of a statistical approach. In the United States, suspects are considered innocent until proven guilty "beyond a reasonable doubt". This in many ways parallels traditional hypothesis testing approaches, in which a pre-defined cut-off (significance level) is used to determine the threshold at which the null hypothesis is rejected (which presumably should occur once the evidence leads us beyond a reasonable doubt). 
 
@@ -71,8 +74,6 @@ This will not be the first automatic system [@xie:2009, @riva:2014, @bachrach:20
 This work has been submitted and accepted (with revisions) by the Annals of Applied Statistics. We are following up by investigating the properties of different features as applied to degraded bullets, and when compared with common cut-offs for match, non-match, and inconclusive from the literature.
 
 ## Statistics Education
-
-*This is joint work with Andee Kaplan. The paper is titled **Designing Modular Software: A Case Study in Introductory Statistics** and has been submitted to the Journal for Computational and Graphical Statistics.*
 
 The widespread adoption of R [@r-stat] as a tool for statistical analysis has undoubtedly been an important development for the scientific community. However, using R in most cases still requires a basic knowledge of programming concepts which may pose a steep learning curve for the introductory statistics student [@5359977]. This additional time commitment may explain why introductory courses often utilize point-and-click applications, even if the instructor himself/herself uses R in their own work. Still, some compromises must be made when using many graphical applications, including dealing with software licenses and unsupported desktop platforms.
 
@@ -115,4 +116,20 @@ We have begun the development of a modernization of this framework which allows 
 knitr::include_graphics(rep("images/lineups_app.png"))
 ```
 
-## References
+# Forensic Science
+
+*This work is part of the Center for Statistics and Applications in Forensic Evidence. It is joint work with Dr. Heike Hofmann and Dr. Alicia Carriquiry. The paper is titled **Automatic Matching of Bullet Lands** and has been submitted to the Annals of Applied Statistics.*
+
+\includepdf[pages=-]{imaging-paper.pdf}
+
+# Statistics Education
+
+*This is joint work with Andee Kaplan. The paper is titled **Designing Modular Software: A Case Study in Introductory Statistics** and has been submitted to the Journal for Computational and Graphical Statistics.*
+
+\includepdf[pages=-]{paper.pdf}
+
+# Visual Inference
+
+# Conclusion
+
+# References
