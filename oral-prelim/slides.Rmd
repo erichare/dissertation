@@ -5,6 +5,49 @@ date: "September 23rd, 2016"
 output: rmdshower::shower_presentation
 ---
 
+## About Me
+
+- Graduated in 2008 from Snohomish High School in Snohomish, WA (Hour Northeast of Seattle)
+- Bachelor of Science with a major in Statistics (University of Washington, June 2012)
+- Bachelor of Science in Computer Engineering (University of Washington, June 2012)
+- Began graduate studies at Iowa State University in August 2012
+- Master of Science in Statistics (Iowa State University, 2014)
+- Declared Co-Major in Statistics and Computer Science, 2014
+- Hope to graduate May 2017...
+
+## Publications
+
+- Hare, E., Hofmann, H., and Carriquiry, A., **Automatic Matching of Bullet Lands**. Accepted by the Annals of Applied Statistics
+- Hare, E., and Kaplan, A., **Introductory Statistics with intRo**. Accepted by JCGS
+- Hare, E., Buja, A., and Hofmann, H., **Manipulation of Discrete Random Variables with discreteRV**. R Journal Vol. 7 Iss. 1 (2015)
+- Sieber, T., Hare, E., Hofmann, H., and Treppel, M., **Biomathematical description of synthetic Peptide libraries**. PLOS One Vol. 10 Iss. 6 (2015)
+- Kaplan, A., and Hare, E., Putting Down Roots: **A Graphical Exploration of Community Attachment** (Accepted in Computational Statistics)
+- Kaplan, A., Hare, E., Hofmann, H., and Cook, D., **Can you buy a president? Politics after the Tillman Act**. CHANCE Vol. 27 Iss. 1 (2014)
+
+## Awards
+
+- ASA Imaging Section Student Paper Award, Received 2016
+- Ron Wasserstein Award for Best Contributed Paper in Statistical Education, Received 2015
+- ASA Computing Section Student Paper Award, Received 2015
+- Kempthorne Award for Best Student in Linear Models, Received 2013
+- ASA Data Exposition - 1st Place, Received 2013
+
+## Dissertation Outline
+
+Working Title: Enabling Scientists to Understand their Data using Web-Based Statistical Tools
+
+Papers:
+
+1. Automatic Matching of Bullet Lands (Accepted)
+2. Designing Modular Software: A Case Study in Introductory Statistics (Accepted)
+3. Visual Inference (In Progress)
+
+## Common Themes
+
+1. Reproducible Research
+2. Interactive Graphics
+3. Statistical Component (Algorithm, optimization, lineup protocol) Data Science Component (Open-source R packages), Web-Based Component (Interface for non-developers)
+
 ## Automatic Matching of Bullet Lands
 
 ![](images/bullet.jpg)
@@ -195,17 +238,6 @@ D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2,
 - The sum $S$ of average absolute heights of matched extrema
 - Cross Correlation Function (CCF)
 
-# Question: Which features depend on the length of the signature?
-
-## Improvement: Scaling Features
-
-Scale each feature dependent on the length by the length of the signature
-
-- CMS per micrometer
-- Matches per micrometer
-- ...
-- Also include the length of the signature as a feature
-
 ## Web Application
 
 https://erichare.shinyapps.io/x3prplus
@@ -215,6 +247,8 @@ https://erichare.shinyapps.io/x3prplus
 - We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of 35 bullets
 - There is likely an effect from the equipment used to scan the bullets, or the person performing the scan
 - We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications
+
+## Timeline
 
 ## Thank You
 
