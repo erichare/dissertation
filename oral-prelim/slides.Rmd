@@ -125,7 +125,7 @@ plot.type = "surface")
 
 ## Step One: Extract a Profile
 
-We need to choose a location (height) of the bullet at which to extract a profile. To do so, we choose a threshold **CCF** (Vorburger, 2011) to achieve between subsequent profiles:
+We need to choose a location (height) of the bullet at which to extract a profile. To do so, we optimize the  **CCF** (Vorburger, 2011):
 
 1. Extract a profile near the base of the bullet, call this value $d_0$.
 2. Take a fixed step $d$ and extract at $d + d_0$.
@@ -271,7 +271,7 @@ Features are extracted from each land-to-land comparison:
 
 * *CCF*: Function of the optimum shift distance measuring the correlation between two profiles
 * *CMS*: Striated markings that line up exactly with one another without a break or dissimilarity in between them (Similarly, CNMS)
-* *Matches*: The number of matches between two signatures (Similarly, Non-Matches)
+* *Matches*: The number of matches total (Similarly, Non-Matches)
 * *D* = $\sqrt{\frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2}$ where $f(t)$ and $g(t)$ are aligned signatures. The euclidean vertical distance between surface measurements of aligned signatures.
 * *S*: The sum $S$ of average absolute heights of matched extrema
 
