@@ -2,16 +2,18 @@
 title: "Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
 author: "Eric Hare"
 date: "September 23rd, 2016"
-output: rmdshower::shower_presentation
+output: 
+    rmdshower::shower_presentation:
+        ratio: 4x3
 ---
 
-## Enabling Scientists to Understand their Data using Web-Based Statistical Tools
+## Enabling Scientists to Understand their Data using Web-Based Statistical Tools { .white }
 
-![](images/bullet.jpg)
+<img src="images/crime.jpg" class="cover">
 
-<p class="black">
-Eric Hare<br/>
-Iowa State University<br/>
+<p class="white">
+Eric Hare<br />
+Iowa State University<br />
 September 23rd, 2016
 </p>
 
