@@ -25,7 +25,7 @@ September 23rd, 2016
 - Began graduate studies at Iowa State University in August 2012
 - Master of Science in Statistics (Iowa State University, 2014)
 - Declared Co-Major in Statistics and Computer Science, 2014
-- Hope to graduate May 2017...
+- Plan to graduate May 2017 and join Omni Analytics Group as Executive Data Scientist
 
 ## Publications
 
@@ -38,9 +38,9 @@ September 23rd, 2016
 
 ## Awards
 
-- ASA Imaging Section Student Paper Award, Received 2016
-- Ron Wasserstein Award for Best Contributed Paper in Statistical Education, Received 2015
-- ASA Computing Section Student Paper Award, Received 2015
+- ASA Imaging Section Student Paper Award, Automatic Matching of Bullet Lands, Received 2016
+- Ron Wasserstein Award for Best Contributed Paper in Statistical Education, Introductory Statistics with intRo, Received 2015
+- ASA Computing Section Student Paper Award, Introductory Statistics with intRo, Received 2015
 - Kempthorne Award for Best Student in Linear Models, Received 2013
 - ASA Data Exposition - 1st Place, Received 2013
 
@@ -93,7 +93,7 @@ library(knitr)
 ## Current Practice
 
 - Traditionally, the bullets are placed under comparison microscopes, are manually aligned by forensic scientists and compared
-- Thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae to declare a match, Nichols 2003)
+- (Arbitrary) Thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae to declare a match, Nichols 2003)
 - However, this has traditionally been less than statistical and such practices have come under fire in the courtroom (Giannelli, 2011)
 
 The problems culminated in a 2009 NAS report which found, among other things, *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline."*
@@ -130,6 +130,7 @@ We need to choose a location (height) of the bullet at which to extract a profil
 3. Check the maximum cross correleation (CCF) between the signature at $d_0$ and at $d + d_0$.
 4. If this CCF exceeds a threshold $c$, choose $d_0$ as the signature
 5. Otherwise, repeat steps 2 to 4 for $d$, $2d$, $3d$, ... until the threshold is achieved.
+6. If the threshold is not achieved, flag the land for further investigation.
 
 Parameters: $d = 25\mu m, d_0 = 25\mu m, c = 0.9$
 
