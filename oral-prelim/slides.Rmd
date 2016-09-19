@@ -17,7 +17,7 @@ output: rmdshower::shower_presentation
 
 ## Publications
 
-- Hare, E., Hofmann, H., and Carriquiry, A., **Automatic Matching of Bullet Lands**. Accepted by the Annals of Applied Statistics
+- Hare, E., Hofmann, H., and Carriquiry, A., **Automatic Matching of Bullet Lands**. Accepted by AoAS
 - Hare, E., and Kaplan, A., **Introductory Statistics with intRo**. Accepted by JCGS
 - Hare, E., Buja, A., and Hofmann, H., **Manipulation of Discrete Random Variables with discreteRV**. R Journal Vol. 7 Iss. 1 (2015)
 - Sieber, T., Hare, E., Hofmann, H., and Treppel, M., **Biomathematical description of synthetic Peptide libraries**. PLOS One Vol. 10 Iss. 6 (2015)
@@ -118,13 +118,15 @@ The basic procedure can be described as follows:
 
 ## Step One: Extract a Profile
 
-We need to choose a location (height) of the bullet at which to extract a profile. To do so:
+We need to choose a location (height) of the bullet at which to extract a profile. To do so, we choose a threshold **CCF** to achieve between subsequent profiles:
 
 1. Extract a profile near the base of the bullet, call this value $d_0$.
 2. Take a fixed step $d$ and extract at $d + d_0$.
 3. Check the cross correleation (CCF) between the signature at $d_0$ and at $d + d_0$.
-4. If this CCF exceeds a threshold (0.9 in our case), choose $d_0$ as the signature
+4. If this CCF exceeds a threshold, choose $d_0$ as the signature
 5. Otherwise, repeat steps 2 to 4 for $d$, $2d$, $3d$, ... until the threshold is achieved.
+
+$d = 25\mu m, d_0 = 25\mu m$
 
 ## Step One (Continued)
 
@@ -137,9 +139,10 @@ qplot(y, value, data = br111) + theme_bw()
 ## Step Two: Remove Grooves
 
 1. At a fixed height $x$ extract a bullet's profile (previous figure, with $x = 243.75\mu m$).
-2. For each $y$ value, smooth out any deviations occurring near the minima by twice applying a rolling average with a pre-set \emph{smoothing factor} $s$.
-3. For each smoothed $y$ value, compute another rolling average using the same smoothing factor as above.
+2. For each $y$ value, smooth out any deviations occurring near the minima by applying a rolling average with a pre-set \emph{smoothing factor} $s$.
+3. For each smoothed $y$ value, compute another rolling average using the same smoothing factor $s$ as above.
 4. Determine the location of the peak of the left groove by finding the first doubly-smoothed value $y_i$ that is the maximum within its smoothing window. (Similar for valley of left groove).
+5. Determine the location of the peak of the right groove by finding the first doubly-smoothed value $y_j$ that is the maximum within its smoothing window after reversing the profile. (Similar for valley of right groove).
 
 ## Identifying Grooves (Easy)
 
@@ -227,17 +230,6 @@ br123 <- filter(bullets_smoothed, bullet == mypaths[2])
 
 <img src="images/importance-1.png" width="750">
 
-## Reminder: List of Features
-
-- Maximal number of CMS (consecutive matching striae), and, similarly, the number of consecutively non-matching striae (CNMS), 
-- Number of matches and non-matches,
-- Average difference $D$ between signatures, defined as the Euclidean vertical distance between surface measurements of aligned signatures.
-\[
-D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2,
-\]
-- The sum $S$ of average absolute heights of matched extrema
-- Cross Correlation Function (CCF)
-
 ## Web Application
 
 https://erichare.shinyapps.io/x3prplus
@@ -247,6 +239,10 @@ https://erichare.shinyapps.io/x3prplus
 - We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of 35 bullets
 - There is likely an effect from the equipment used to scan the bullets, or the person performing the scan
 - We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications
+
+## Designing Modular Software: A Case Study in Introductory Statistics
+
+## Visual Inference
 
 ## Timeline
 
