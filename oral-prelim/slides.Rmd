@@ -5,6 +5,16 @@ date: "September 23rd, 2016"
 output: rmdshower::shower_presentation
 ---
 
+## Enabling Scientists to Understand their Data using Web-Based Statistical Tools
+
+![](images/bullet.jpg)
+
+<p class="black">
+Eric Hare<br/>
+Iowa State University
+September 23rd, 2016<br/>
+</p>
+
 # Background
 
 ## About Me
