@@ -346,6 +346,10 @@ knitr::include_graphics("images/lineups_app.png")
 
 ## Deliverables Timeline
 
+```{r timeline, echo=FALSE, fig.cap='My timeline for graduation', fig.pos='H', fig.align='center'}
+knitr::include_graphics("images/timeline.png")
+```
+
 ## Thank You
 
 Special thanks to Alan Zheng at the National Institute of Standards and Technology for maintaining the NIST Ballistics Toolmark Research Database and providing many useful suggestions for our algorithm.
