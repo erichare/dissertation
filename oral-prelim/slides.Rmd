@@ -11,8 +11,8 @@ output: rmdshower::shower_presentation
 
 <p class="black">
 Eric Hare<br/>
-Iowa State University
-September 23rd, 2016<br/>
+Iowa State University<br/>
+September 23rd, 2016
 </p>
 
 # Background
