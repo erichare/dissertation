@@ -15,6 +15,7 @@ header-includes:
     - \usepackage{setspace}
     - \usepackage{pdfpages}
     - \usepackage{float}
+    - \usepackage{subcaption}
     - \doublespacing
 ---
 
@@ -135,19 +136,23 @@ Using an interface similar to this prototype, researchers and scientists will be
 
 *This work is part of the Center for Statistics and Applications in Forensic Evidence. It is joint work with Dr. Heike Hofmann and Dr. Alicia Carriquiry. The paper is titled **Automatic Matching of Bullet Lands** and has been accepted with revisions by the Annals of Applied Statistics. The revision has been submitted to the journal.*
 
-\includepdf[pages=-]{imaging-paper.pdf}
+```{r, child='papers/bullets/imaging-paper.Rmd'}
+
+```
 
 ## Follow-Up to Automatic Matching of Bullet Lands
 
 *This work is in progress*
 
-Rough Outline:
+### Introduction
 
-1. Introduction
-2. Background + Current state of algorithm
-3. Degraded Bullets
-4. Feature Comparison
-5. Conclusion
+### Background + Current state of algorithm
+
+### Degraded Bullets
+
+### Feature Comparison
+
+### Conclusion
 
 \newpage
 
@@ -155,24 +160,28 @@ Rough Outline:
 
 *This is joint work with Andee Kaplan. The paper is titled **Designing Modular Software: A Case Study in Introductory Statistics** and has been accepted with revisions by the Journal for Computational and Graphical Statistics. A revision is currently being prepared.*
 
-\includepdf[pages=-]{paper.pdf}
+```{r, child='papers/intRo/paper.Rmd'}
+
+```
 
 # Visual Inference
 
 *This work is in progress*
 
-Rough Outline:
+## Introduction to Visual Inference
 
-1. Introduction to Visual Inference
-2. Background (Current study deployment methods)
-3. New Framework
-    a. Observers
-    b. Researchers
-4. Limitations/Future Work
-5. Conclusion
+## Background (Current study deployment methods)
 
-# Conclusion
+## New Framework
 
-Thoughts, conclusions, and future work coming soon...
+### Observers
+
+### Researchers
+
+## Limitations/Future Work
+
+## Conclusion
+
+# Future Work
 
 # References

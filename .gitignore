@@ -4,3 +4,5 @@ README.html
 proposal.pdf
 _book
 _bookdown_files
+papers/bullets/data*
+papers/bullets/csvs*
