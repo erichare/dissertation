@@ -321,7 +321,7 @@ knitr::include_graphics("images/bullets_app.png")
 ## Designing Modular Software: A Case Study in Introductory Statistics
 
 - Paper on **intRo**, a modular, extensible, web-based software system for teaching introductory statistics, which produces reproducible R code resulting from actions taken in the GUI.
-- Focuses on the construction of a modulary software system using **intRo** itself as a case-study.
+- Focuses on the construction of a modular software system using **intRo** itself as a case-study.
 - Accepted with revisions in the Journal for Computational and Graphical Statistics.
 
 ## Screenshot and Link
