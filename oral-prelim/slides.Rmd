@@ -98,7 +98,7 @@ library(knitr)
 - (Arbitrary) Thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae to declare a match, Nichols 2003)
 - However, this has traditionally been less than statistical and such practices have come under fire in the courtroom (Giannelli, 2011)
 
-The problems culminated in a 2009 NAS report which found, among other things, *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline."*
+The problems culminated in a 2009 NAS report which found *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing."*
 
 ## More Problems
 
@@ -143,7 +143,7 @@ We need to choose a location (height) of the bullet at which to extract a profil
 
 1. Extract a profile near the base of the bullet, call this value $d_0$.
 2. Take a fixed step $d$ and extract at $d + d_0$.
-3. Check the maximum cross correleation (CCF) between the signature at $d_0$ and at $d + d_0$.
+3. Check the maximum cross correlation (CCF) between the signature at $d_0$ and at $d + d_0$.
 4. If this CCF exceeds a threshold $c$, choose $d_0$ as the signature
 5. Otherwise, repeat steps 2 to 4 for $d$, $2d$, $3d$, ... until the threshold is achieved.
 6. If the threshold is not achieved, flag the land for further investigation.
@@ -305,7 +305,7 @@ Features are extracted from each land-to-land comparison:
 
 https://erichare.shinyapps.io/x3prplus
 
-```{r bullets-app, echo=FALSE, fig.cap='The web-deployed version of the bullets application', fig.pos='H'}
+```{r bullets-app, echo=FALSE, fig.pos='H'}
 knitr::include_graphics("images/bullets_app.png")
 ```
 
@@ -320,7 +320,7 @@ knitr::include_graphics("images/bullets_app.png")
 
 ## Designing Modular Software: A Case Study in Introductory Statistics
 
-- Paper on **intRo**, a modular, extensible, web-based software system for teaching introdutory statistics, which produces reproducible R code resulting from actions taken in the GUI.
+- Paper on **intRo**, a modular, extensible, web-based software system for teaching introductory statistics, which produces reproducible R code resulting from actions taken in the GUI.
 - Focuses on the construction of a modulary software system using **intRo** itself as a case-study.
 - Accepted with revisions in the Journal for Computational and Graphical Statistics.
 
@@ -328,7 +328,7 @@ knitr::include_graphics("images/bullets_app.png")
 
 http://www.intro-stats.com
 
-```{r intro-app, echo=FALSE, fig.cap='The intRo statistical software application.', fig.pos='H'}
+```{r intro-app, echo=FALSE}
 knitr::include_graphics("images/intro_app.png")
 ```
 
@@ -346,7 +346,7 @@ knitr::include_graphics("images/intro_app.png")
 
 A modernization of the framework to run lineup experiments and identify the most different plot in a set of null plots is in development.
 
-```{r lineup, echo=FALSE, fig.cap='An example lineup', fig.pos='H', fig.align='center'}
+```{r lineup, echo=FALSE, fig.align='center'}
 knitr::include_graphics("images/lineup.png")
 ```
 
@@ -354,7 +354,7 @@ knitr::include_graphics("images/lineup.png")
 
 In the early stages is a new service to enable researchers to automatically conduct and run lineup experiments, while allowing for the specification of the randomization scheme, stratification factors, and parameters of the study
 
-```{r lineup-app, echo=FALSE, fig.cap='A prototype of the admin user interface for the lineups app', fig.pos='H', fig.align='center'}
+```{r lineup-app, echo=FALSE, fig.align='center'}
 knitr::include_graphics("images/lineups_app.png")
 ```
 
@@ -362,7 +362,7 @@ knitr::include_graphics("images/lineups_app.png")
 
 ## Deliverables Timeline
 
-```{r timeline, echo=FALSE, fig.cap='My timeline for graduation', fig.pos='H', fig.align='center'}
+```{r timeline, echo=FALSE, fig.align='center'}
 knitr::include_graphics("images/timeline.png")
 ```
 
