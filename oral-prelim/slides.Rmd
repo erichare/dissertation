@@ -100,6 +100,20 @@ library(knitr)
 
 The problems culminated in a 2009 NAS report which found, among other things, *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline."*
 
+## More Problems
+
+A timely report was released on Tuesday by the President’s Council of Advisors on Science and Technology (PCAST) titled **Forensic Science in Criminal Courts: Ensuring Scientific Validity of Feature-Comparison Methods**.
+
+    A second—and more important—direction is (as with latent print analysis) 
+    to convert firearms analysis from a subjective method to an objective 
+    method. This would involve developing and testing image-analysis 
+    algorithms for comparing the similarity of tool marks on bullets. [...] 
+    In a recent study, researchers used images from an earlier study to 
+    develop a computer-assisted approach to match bullets that minimizes 
+    human input [338].
+
+338: Hare, E., Hofmann, H., and A. Carriquiry. “Automatic matching of bullet lands.” Unpublished paper, available at: arxiv.org/pdf/1601.05788v2.pdf.
+
 ## James Hamby Study
 
 - Ten consecutively rifled Ruger P-85 pistol barrels used to fire 20 "known" test bullets and 15 "unknown" bullets for comparison
@@ -269,10 +283,10 @@ ggplot() +
 
 Features are extracted from each land-to-land comparison:
 
-* *CCF*: Function of the optimum shift distance measuring the correlation between two profiles
-* *CMS*: Striated markings that line up exactly with one another without a break or dissimilarity in between them (Similarly, CNMS)
+* *CCF*: Function of the optimum shift distance measuring the correlation between two profiles (Vorburger, 2011)
+* *CMS*: Striated markings that line up exactly with one another without a break or dissimilarity in between them (Similarly, CNMS) (Biasotti 1959)
 * *Matches*: The number of matches total (Similarly, Non-Matches)
-* *D* = $\sqrt{\frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2}$ where $f(t)$ and $g(t)$ are aligned signatures. The euclidean vertical distance between surface measurements of aligned signatures.
+* *D*: The euclidean vertical distance between surface measurements of aligned signatures. (A measure of the Total Variation (Clarkson, 1933))
 * *S*: The sum $S$ of average absolute heights of matched extrema
 
 ## Distribution of Features
