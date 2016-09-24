@@ -1,5 +1,5 @@
 ---
-title: "Enabling Scientists to Understand their Data using Web-Based Statistical Tools"
+title: "Statistical Methods for Bullet Matching"
 author: "Eric Hare"
 knit: "bookdown::render_book"
 output:
@@ -23,33 +23,19 @@ header-includes:
 
 # Introduction
 
-The computing revolution has opened up statistical methods and tools to a broad range of fields. With the growing popularity of R [@R] in particular, the wide range of choices of open source statistical routines in the form of packages has significantly expanded statistical computing capabilities. Still, there remains a fundamental obstacle to the use of R. Effective use of R requires a commitment to learning and understanding programming, which some individuals, companies, and researchers may not have the time or desire to do. Furthermore, although the open-source nature of R is one of its biggest assets, it also means that there is a more rapid development cycle than would often be found in more corporate software solutions. This means that R developers must continue to maintain their code while learning new programming concepts.
+There are few stakes higher than the prosecution of suspects in the criminal justice system. In the United States, 32 states continue to maintain the use of the capital punishment, in which a convicted suspect can have their life ended. All 50 states will consider a lifetime imprisonment, with no opportunity for parole, given the extent of the crime committed. And yet, in spite of the major stakes, many forensic science methods have come under fire in recent years due to a lack of statistical rigor. The issues were well summarized in a report by the President's Council of Advisors on Science on Technology (PCAST) [@pcast2016]. A nonexhaustive list of the issues:
 
-A number of tools have been developed in an attempt to address this issue. The commercial software on which R is derived, S-PLUS [@SPlus], includes a rudimentary graphical user interface (GUI) supporting data editing, graphing, and basic statistics. Over time, GUIs were developed for R as well. One of the first was R Commander [@fox2005], which provides a wrap-around user interface for R. With drop-down menus allowing point-and-click selection of a number of common data analysis and statistical functions, analysis could be performed without a knowledge of programming. More recently, the program Deducer [@fellows2012] also abstracts the programming into graphical menus and buttons. It expands on R Commander by providing an effective data viewer, help system, and easy to read tables displaying the results.
+- Fingerprint analysis is a subjective process where investigators can be swayed, and error rates are seriously lacking.
+- Bitemark analysis is seen as a method that probably can't be developed into a scientifically valid method, and resources towards such efforts should be minimal.
+- DNA analysis, while more sound, sometimes discounts the role of operator error in the process.
 
-GUIs have some natural limitations that often make them a less appealing option for researchers. The results of an analysis from a GUI are not typically reproducible. Whereas an R script can be created, shared, and executed elsewhere, the actions taken in a GUI are not transcribed and portable. GUIs also tend to slow down the development and iteration process once the user has become more comfortable with the programming concepts. For instance, scripts allow copying and pasting of code blocks that need only minor modifications. In a GUI, the options representing a code block would need to be individually chosen through drop-down menus.
+There was also a heavy focus on the limitations of firearms analysis. Though a widely used and accepted procedure, it has come under particular scrutiny in the past decade. In 2005, in *United States vs. Green*, the court ruled that the forensic expert could not confirm that the bullet casings came from a specific weapon with certainty, but could merely ``describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011]. In 2009, the National Academy of Sciences published a report [@NAS:2009] questioning the scientific validity of many forensic methods including firearm examination. The report states that "[m]uch forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline." The PCAST report corroborated these findings, and explained how modern techniques could potentially be used to turn this analysis into something more objective:
 
-Recognizing some of these limitations, other approaches have been taken to easing the transition to working with R. RStudio [@RStudio] provides a GUI around R with expanded functionality, but maintains focus on the scripting and coding aspect. In this sense, RStudio more readily resembles an IDE (Integrated Development Environment), which aid the programmer rather than attempting to abstract the programming away. While this allows reproducibility and may still help a less experienced programmer begin to get started in a programming language, it still depends on a continuing effort to learn programming.
-
-Essentially, we can partition researchers into three broad sets:
-
-1. Those who have no interest in using statistics to aid their research
-2. Those who have interest in using statistics to aid their research, and have a knowledge of or interest in gaining a knowledge of programming
-3. Those who have interest in using statistics to aid their research, but have no interest in programming, or significantly struggle in programming
-
-We can hope to change the minds of the people in set 1, moving them into sets 2 or 3. Those in set 2 have most to gain from the use of R and/or RStudio. On the other hand, those in set 3 have the most to gain from effective GUIs that do not require programming knowledge. One major role for the statistician is to understand the data of the scientist. In fact, this is fundamental to the goal of enabling an understanding of their own data. As understanding grows, we can begin to construct tools and services which enable an exploration of it.
-
-The Shiny package for R provides a framework for researchers who fall in set 2 to provide a service to those in set 3. Shiny [@shiny] is a web development framework which can help turn the results of an R analysis into an interactive web application. Results can be generated by browsing to the website at which the Shiny application is deployed, and using GUI elements (drop-downs, text boxes, tabs) similar to R Commander or Deducer in order to generate results. But a Shiny application is standard R code, and hence maintains the reproducibility and maintainability benefits of standard R scripts.
-
-Because Shiny offers a solution which maintains the benefits of both GUIs and standard programming, I believe it can form the basis for a new set of tools and concepts that greatly expand the reach of statistics. Those who are comfortable with programming can now provide functionality to those who aren't. This functionality can enable researchers to see, understand, and work with their data in ways that they were simply unable to.
-
-In my work, I have focused on three broad areas that can benefit from graphical rather than purely programmatic tools. These areas are forensic science, statistical education, and visual inference. Each of these areas, I believe, can benefit significantly from functionality present in R and associated packages. But for the foreseeable future, each field will also include a significant number of students, researchers, and scientists that have little-to-no knowledge of R, and will therefore be dissuaded from attempting its use. Each chapter includes an associated open-source R package, published on GitHub, documenting the algorithms and procedures used [@x3prplus, @intRopkg, @lineupspkg]. Each chapter also includes a web-based front-end accessible to those without programming knowledge \footnote{\url{https://erichare.shinyapps.io/x3prplus}} \footnote{\url{https://www.intro-stats.com}} \footnote{\url{https://bill.shinyapps.io/lineups}}. Working at the interface of Statistics and Computer Science, I will explain the current state of the art in each of these fields, and how a reproducible R and web-based solution can help to address the current shortcomings. At the conclusion of this proposal document are papers corresponding to the first two chapters.
-
-## Forensic Science
-
-The judicial system is an especially good candidate for the integration of a statistical approach. In the United States, suspects are considered innocent until proven guilty "beyond a reasonable doubt". This in many ways parallels traditional hypothesis testing approaches, in which a pre-defined cut-off (significance level) is used to determine the threshold at which the null hypothesis is rejected (which presumably should occur once the evidence leads us beyond a reasonable doubt). 
-
-But such probabilistic thinking doesn't always occur. In particular, bullet matching, or the process of determining whether two bullets were fired from the same gun barrel, has been the subject of intense scrutiny in the past 15 years. In 2005, in *United States vs. Green*, the court ruled that the forensic expert in question could not confirm that the bullet casings came from a specific weapon with certainty, but could merely "describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011]. This scrutiny culminated in the 2009 National Academy of Sciences report questioning the scientific validity of many forensic methods including firearm examination. The report states that "[m]uch forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline" [@NAS:2009]. Furthermore, a new report is currently being prepared by the President’s Council of Advisors on Science and Technology (PCAST) with the recommendation of not allowing ballistic matches in court.
+*A second—and more important—direction is (as with latent print analysis) to convert firearms analysis from a subjective method to an objective method. This would involve developing and testing image-analysis algorithms for comparing the similarity of tool marks on bullets. There have already been encouraging steps toward this goal. Recent efforts to characterize 3D images of bullets have used statistical and machine learning methods to construct a quantitative “signature” for each bullet that can be used for comparisons across samples.*
+    
+## Bullet Matching
+    
+In the United States, suspects are considered innocent until proven guilty "beyond a reasonable doubt". This in many ways parallels traditional hypothesis testing approaches, in which a pre-defined cut-off (significance level) is used to determine the threshold at which the null hypothesis is rejected (which presumably should occur once the evidence leads us beyond a reasonable doubt). 
 
 Rifling, manufacturing defects, and impurities in a barrel create striation marks on the bullet during the firing process. These marks are assumed to be unique to the barrel, as described in a 1992 AFTE article [@afte:1992]. Current standard practice for bullet matching relies in part on the assessment of the so-called maximum number of consecutively matching striae (CMS), first defined by @biasotti:1959. One of the primary issues with this procedure is that a human inspection to determine CMS is subjective [@miller:1998]. Human inspection also requires on-site analysis of the bullets, which can be costly and time-consuming, and introduces the potential for differing opinions across different forensic examiners.
 
@@ -79,27 +65,23 @@ This is not the first automatic bullet matching system [@xie:2009, @riva:2014, @
 
 This work has been submitted and accepted (with revisions) by the Annals of Applied Statistics. We are following up by investigating the properties of different features as applied to degraded bullets, and when compared with common cut-offs for match, non-match, and inconclusive from the literature. In particular, because a real world scenario often involves recovering only a fragment of the bullet from a crime scene, many of the traditional features such as CMS need generalizations that handle these cases. Furthermore, there is an open question regarding precisely the size of the fragment needed in order to be confident of a match "beyond a reasonable doubt". This warrants further investigation.
 
-## Statistics Education
+## Computing Tools for Bullet Matching
 
-The widespread adoption of R [@r-stat] as a tool for statistical analysis has undoubtedly been an important development for the scientific community. However, using R in most cases still requires a basic knowledge of programming concepts which may pose a steep learning curve for the introductory statistics student [@5359977]. This additional time commitment may explain why introductory courses often utilize point-and-click applications, even if the instructor himself/herself uses R in their own work. Still, some compromises must be made when using many graphical applications, including dealing with software licenses and unsupported desktop platforms.
+Conveniently, the computing revolution has opened up statistical methods and tools to a broad range of fields, and these tools can be used to begin such an image analysis algorithm. With the growing popularity of R [@R] in particular, the wide range of choices of open source statistical routines in the form of packages has significantly expanded statistical computing capabilities. 
 
-Multiple software packages have recently been written in an attempt to spur interest in R programming and statistics. DataCamp's [@datacamp] courses are user-friendly ways to learning basic R programming and data analysis techniques. Swirl [@swirl] is a similar interactive tool to make learning R more fun by learning it within R itself. Project MOSAIC [@mosaic] has created a suite of tools to simplify the teaching of statistics in the form of an R package. The primary goal of DataCamp and Swirl is to teach R programming, rather than facilitate the learning of introductory statistics. Project MOSAIC's goal is to facilitate this learning, but using the package requires a knowledge of R programming that the introductory student may not have. R Commander [@fox2005] and Deducer [@fellows2012] provide a graphical front-end to many statistical functions in R, but are not web-based and thus require local installation and configuration. iNZight Lite [@inzight] also attempts to expose students to data analysis without requiring programming knowledge, but does not include reproducible R code, and therefore has less of a focus on spurring interest in coding for students.
+Still, there remains a fundamental obstacle to the use of R. Effective use of R requires a commitment to learning and understanding programming, which some in the forensic science community may not have the desire to do so. Furthermore, although the open-source nature of R is one of its biggest assets, it also means that there is a more rapid development cycle than would often be found in more corporate software solutions. This means that R developers must continue to maintain their code while learning new programming concepts.
 
-Upon the release of RStudio's Shiny [@shiny] it became easier for an R-based analysis to be converted to an interactive web application. Shiny helps generate modern, fluid web applications which scale to different device sizes, requiring only a browser to access. Because of this, it targets some of the issues of pre-existing statistical software. Software written in Shiny requires no installation, no licenses, and no knowledge of programming. With that in mind, a modern statistical software program aimed at supplementing an introductory statistics class could prove very useful. We call this software **intRo**. Figure \@ref(fig:intro-app). displays the default **intRo** user interface.
+A number of tools have been developed in an attempt to address this issue. The commercial software on which R is derived, S-PLUS [@SPlus], includes a rudimentary graphical user interface (GUI) supporting data editing, graphing, and basic statistics. Over time, GUIs were developed for R as well. One of the first was R Commander [@fox2005], which provides a wrap-around user interface for R. With drop-down menus allowing point-and-click selection of a number of common data analysis and statistical functions, analysis could be performed without a knowledge of programming. More recently, the program Deducer [@fellows2012] also abstracts the programming into graphical menus and buttons. It expands on R Commander by providing an effective data viewer, help system, and easy to read tables displaying the results.
 
-```{r intro-app, echo=FALSE, fig.cap='Default user interface for the intRo application.', fig.pos='H'}
-knitr::include_graphics(rep("images/intro_app.png"))
-```
+GUIs have some natural limitations that often make them a less appealing option for researchers. The results of an analysis from a GUI are not typically reproducible. Whereas an R script can be created, shared, and executed elsewhere, the actions taken in a GUI are not transcribed and portable. GUIs also tend to slow down the development and iteration process once the user has become more comfortable with the programming concepts. For instance, scripts allow copying and pasting of code blocks that need only minor modifications. In a GUI, the options representing a code block would need to be individually chosen through drop-down menus.
 
-There are two primary guiding principles behind the design of **intRo**. The first is modularity. For software to maintain simplicity, it should not overload the user with options. But for software to remain flexible enough to be used by a wide variety of universities, options must be available. We've addressed this seeming contradiction by building each piece of functionality as a *module*. Modules are self-contained sets of R scripts which define the user interface, the functionality, and the output of a particular set of statistical functions in **intRo**. Modules can be dynamically included or removed at run-time by an instructor, presenting to the user a minimal set of options relevant to their particular classroom setting.
+Recognizing some of these limitations, other approaches have been taken to easing the transition to working with R. RStudio [@RStudio] provides a GUI around R with expanded functionality, but maintains focus on the scripting and coding aspect. In this sense, RStudio more readily resembles an IDE (Integrated Development Environment), which aid the programmer rather than attempting to abstract the programming away. While this allows reproducibility and may still help a less experienced programmer begin to get started in a programming language, it still depends on a continuing effort to learn programming.
 
-The second guiding principle is reproducibility. While we wrote **intRo** to be accessible to users of all computer skill levels, we still recognize that there is significant value in programming. In particular, R scripts can be shared, reproduced, and the results regenerated. We built in these reproducibility concepts to **intRo**. The results generated in an **intRo** session are automatically converted into reproducible R code. Each point-and-click action is transcribed, and the results visible in **intRo** will match the results produced by the R code at the bottom of the page. This overcomes a common limitation of GUIs in that typically results are not reproducible. There does exist a caveat to this reproducibility, however. **intRo** makes use of some basic interactive graphics routines through the incorporation of the ggvis  package [@ggvis]. In particular, hovering on points in a scatterplot will produce tooltips indicating the exact values of $x$ and $y$ in the plot. However, this hovering action is not reproduced in code. Some recent research is being done in this area [e.g., @stevens2010holoviews], but **intRo** is not currently utilizing these methods.
+The Shiny package for R provides a framework for researchers who fall in set 2 to provide a service to those in set 3. Shiny [@shiny] is a web development framework which can help turn the results of an R analysis into an interactive web application. Results can be generated by browsing to the website at which the Shiny application is deployed, and using GUI elements (drop-downs, text boxes, tabs) similar to R Commander or Deducer in order to generate results. But a Shiny application is standard R code, and hence maintains the reproducibility and maintainability benefits of standard R scripts.
 
-While **intRo** has been stable in development for some time, there is some major work that must be done in order to see a wider adoption. In particular, the procedure for creating and deploying new **intRo** modules is currently a black box. It is a bit cumbersome, and some streamlining can be done in order to make it both easier and faster to do. There is also a rather limited set of functionality available at this stage. The lack of functionality can be remedied by creating an official repository of modules, which would also serve as examples for developers wishing to create their own modules.
+Because Shiny offers a solution which maintains the benefits of both GUIs and standard programming, I believe it can form the basis for a new set of tools and concepts that greatly expand the reach of statistics. Those who are comfortable with programming can now provide functionality to those who aren't. This functionality can enable researchers to see, understand, and work with their data in ways that they were simply unable to. Ultimately, an open-source solution based on R and Shiny I believe can yield a bullet matching framework which allows for iteration and improvement, but doesn't shut out individuals lacking a knowledge of or a desire to learn programming.
 
-This work has been submitted and accepted (with revisions) by the Journal of Computational and Graphical Statistics. In this paper, we focus on intRo as a case study in the development of a modular, extensible, and web-based statistical software application, which allows the results generated to be seamlessly reproduced in R code.
-
-## Visual Inference
+## Visual Inference for Bullet Matching
 
 A major aspect of exploratory data analysis is producing graphical displays, which help draw attention to patterns in data. Graphical displays are even used for model assessment [@Gelman:2004gg]. Ultimately, a graphical display is a statistic, or some function of the data. Unlike a traditional hypothesis test setting, however, a graphical display does not have a clearly defined reference distribution from which comparisons can be made (contrast this with, for instance, a statistic such as the sample mean for large samples which is asymptotically normally distributed under regularity conditions) This makes the identification of "significant" features of a graphical display far more challenging.
 
@@ -130,9 +112,7 @@ Using an interface similar to this prototype, researchers and scientists will be
 
 \newpage
 
-# Forensic Science
-
-## Automatic Matching of Bullet Lands
+# Automatic Matching of Bullet Lands
 
 *This work is part of the Center for Statistics and Applications in Forensic Evidence. It is joint work with Dr. Heike Hofmann and Dr. Alicia Carriquiry. The paper is titled **Automatic Matching of Bullet Lands** and has been accepted with revisions by the Annals of Applied Statistics. The revision has been submitted to the journal.*
 
@@ -140,31 +120,23 @@ Using an interface similar to this prototype, researchers and scientists will be
 
 ```
 
-## Follow-Up to Automatic Matching of Bullet Lands
+# Explorations in Matching Degraded Bullets
 
 *This work is in progress*
 
-### Introduction
+## Introduction
 
-### Background + Current state of algorithm
+## Background + Current state of algorithm
 
-### Degraded Bullets
+## Degraded Bullets
 
-### Feature Comparison
+## Feature Comparison
 
-### Conclusion
+## Conclusion
 
 \newpage
 
-# Statistics Education
-
-*This is joint work with Andee Kaplan. The paper is titled **Designing Modular Software: A Case Study in Introductory Statistics** and has been accepted with revisions by the Journal for Computational and Graphical Statistics. A revision is currently being prepared.*
-
-```{r, child='papers/intRo/paper.Rmd'}
-
-```
-
-# Visual Inference
+# A Visual Inference Framework for Graphical Tests with a Case Study in Bullet Signatures
 
 *This work is in progress*
 

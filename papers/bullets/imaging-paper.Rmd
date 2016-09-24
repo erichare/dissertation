@@ -34,7 +34,7 @@ library(reshape2)
 library(randomForest)
 ```
 
-### Introduction
+## Introduction
 
 Firearm examination is a forensic tool used to determine whether two bullets were fired from the same gun barrel. This process has broad applicability in terms of convictions in the United States criminal justice system. Firearms identification has long been considered an accepted and reliable procedure, but in the past ten years has undergone more significant scrutiny. In 2005, in *United States vs. Green*, the court ruled that the forensic expert could not confirm that the bullet casings came from a specific weapon with certainty, but could merely ``describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011].
 
@@ -74,45 +74,39 @@ The typical number and width of striation markings on bullets varies significant
 
 The purpose of our paper is to present an automatic matching routine that allows for a completely objective assessment of the quality of a match. Our algorithm is fully open source and available on GitHub [@x3prplus]. This transparency allows for a greater understanding of the individual steps involved in the bullet matching process, and allows other forensic examiners, as well as outside observers, examine the factors that separate known bullet matches from non-matches. We have chosen to perform the matching on a land-to-land level, rather than bullet-to-bullet. Although doing so introduces an implicit assumption of independence between lands, assuming independence only serves to make the task more challenging.
 The original paper on the complete Hamby study already reports the successful use of several computer-assisted methods; aside from a zero false positive rate, no further details on a false-negative error rate for bullets are given nor are error rates for land-to-land matches mentioned. 
-% Hamby study: automated systems were successfully used for matching:
-%  Intelligent Automation's SciClops - Dr. Ben Bachrach (Maryland, United States);
-% Automated Land Identification System (ALIS) - Mr. Tsuneo Uchiyama (Tokyo, Japan);
-% Integrated Ballistics Identification System (IBIS) – Mr. Robert Thompson (California, United States);
-% BulletTRAX-3DTM - Forensic Technology Scientists (Montreal, Canada) (2 sets)
- 
+
 A procedure for bullet matching using the BulletTrax3D system is described in @roberge:2006. This study is based on another set of ten consecutively rifled barrels; matches are identified based on a bullet-to-bullet correlation score. The authors state that this process `could be automated', but no implementation of the algorithm is available. Modern automated techniques using 3D images have also been conducted by @riva:2014, but this work applies to striae found on cartridge cases and not bullets.
 
-The remainder of this paper is structured as follows: We first discuss two methods of modeling the class structure of the bullet surfaces. %We then describe a web application for visualizing and working with bullet surfaces. 
-We then proceed to describing an automatic matching routine which we evaluate on the bullets made available through the Hamby study.
+The remainder of this paper is structured as follows: We first discuss two methods of modeling the class structure of the bullet surfaces. We then proceed to describing an automatic matching routine which we evaluate on the bullets made available through the Hamby study.
 
-### Bullet signatures
+## Bullet signatures
 
-#### Identifying groove locations
+### Identifying groove locations
 
-#### Removing curvature
+### Removing curvature
 
-### Automatic matching
+## Automatic matching
 
-#### Algorithm
+### Algorithm
 
-#### Horizontal alignment
+### Horizontal alignment
 
-#### Impact of bullet height
+### Impact of bullet height
 
-#### Varying smoothing factor
+### Varying smoothing factor
 
-### Evaluation
+## Evaluation
 
-### Conclusion
+## Conclusion
 
-### Appendix
+## Appendix
 
-#### Cylindrical Fit
+### Cylindrical Fit
 
-#### Assessing cross-correlation between signatures at multiple levels of height
+### Assessing cross-correlation between signatures at multiple levels of height
 
-#### Signature intensities
+### Signature intensities
 
-#### Complete evaluation of the Hamby study
+### Complete evaluation of the Hamby study
 
-#### Table of feature importance
+### Table of feature importance
