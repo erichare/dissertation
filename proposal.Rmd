@@ -126,11 +126,33 @@ Using an interface similar to this prototype, researchers and scientists will be
 
 ## Introduction
 
-## Background + Current state of algorithm
+## Features
 
-## Degraded Bullets
+For each:
 
-## Feature Comparison
+- Definition
+- Implementation
+- Adaption to rate (per millimeter)
+
+### Individual Bullet Lands
+
+### Pairs of Bullet Lands
+
+## Degredation Conditions
+
+- Smooth deformations
+- Non-smooth deformations
+- Shortened Sequences
+- Elongated Sequences
+
+## Distributional Assessments
+
+### Hamby Study
+
+Predictive Efficiency under
+
+- Perfect conditions
+- Degraded conditions
 
 ## Conclusion
 
