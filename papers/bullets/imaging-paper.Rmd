@@ -5,10 +5,10 @@ library(extrafont)
 library(knitr)
 imgdir <- "Figure/"
 codedir <- "code"
-datadir <- "app/images/Hamby252_3DX3P1of2/"
+datadir <- "images/Hamby (2009) Barrel/bullets/"
 
 options(replace.assign=TRUE,scipen=3, digits=2)
-bstats <- read.csv("data-25-25/bullet-stats-old.csv")
+bstats <- read.csv("data/data-25-25/bullet-stats-old.csv")
 
 scrubPath <- function(x) {
   splits <- strsplit(as.character(x), split="/")
@@ -54,11 +54,11 @@ Throughout this paper, we work with images from the James Hamby Consecutively Ri
 3D topographical images of each bullet were obtained using a NanoFocus lens at 20x magnification and made publicly available on the NIST Ballistics Database Project\footnote{\url{http://www.nist.gov/forensics/ballisticsdb/hamby-consecutively-rifled-barrels.cfm}} in a format called x3p (XML 3-D Surface Profile). The x3p format conforms to the ISO5436-2 standard\footnote{\url{http://sourceforge.net/p/open-gps/mwiki/X3p/}}, implemented to provide a simple and standard conforming way to exchange 2D and 3D profile data. It was adopted by the OpenFMC (Open Forensic Metrology Consortium\footnote{\url{http://www.openfmc.org/}}), a group of academic, industry, and government firearm forensics researchers whose aim is to establish best practices for researchers using metrology in forensic science.
 
 ```{r sidex3p, echo=FALSE, fig.align='center', fig.cap='View of the data along the circumference of the bullet (circular segment of about 30 degrees).'}
-include_graphics("images/sidex3p.png")
+include_graphics("papers/bullets/images/sidex3p.png")
 ```
 
 ```{r topx3p, echo=FALSE, fig.align='center', fig.cap='Frontal view of a bullet land (lower end of the view is the bottom of the bullet).'}
-include_graphics("images/topx3p.png")
+include_graphics("papers/bullets/images/topx3p.png")
 ```
 
 ```{r, echo=FALSE}
@@ -81,15 +81,423 @@ The remainder of this paper is structured as follows: We first discuss two metho
 
 ## Bullet signatures
 
+In an approach to analyze the striation pattern, we extract a **bullet profile** [@ma:2004] by taking a cross section of the surface measurements at a fixed height $x$ along the bullet land. Figure \ref{fig:fixedX} shows a plot of the side profile of a bullet land. It can be seen that the global structure of the land dominates the appearance of the plot. The grooves can be clearly identified on the left and right side, and the curvature of the surface is the most visible feature in the middle.
+
+\begin{figure}[hbtp]
+  \centering
+```{r fixedX, echo=FALSE, warning=FALSE, message=FALSE, fig.height=2, fig.width=6, out.width='0.65\\textwidth'}
+
+cols = c(alpha("grey60", alpha=0.6), alpha("black", 0.5))
+
+br111 <- read.x3p(paste(datadir,"Br1 Bullet 1-5.x3p", sep = "/"))
+dbr111 <- fortify_x3p(br111)
+
+pars <- data.frame(getCircle(dbr111$y, dbr111$value))
+dbr111$theta <- acos((dbr111$y-pars$x0)/pars$radius)/pi*180
+dbr111 <- dbr111 %>% mutate(
+  xpred = cos(theta/180*pi)*pars$radius + pars$x0,
+  ypred = sin(theta/180*pi)*pars$radius + pars$y0
+)
+
+qplot(data=subset(dbr111, x <= 100*1.5625^2 & x >= 99*1.5625^2), y, value, geom="line", size=I(1)) +
+  geom_line(aes(x=xpred, y=ypred, group=x), 
+            colour="grey30", size=0.25) +
+#  ylab(expression(paste("Surface Measurements (in ",mu,m,")", sep=""))) + 
+  ylab("") +
+  theme_bw() + 
+  theme(legend.position="bottom") #+ coord_equal()
+```
+
+\caption{\label{fig:fixedX}Side profile of the surface measurements (in~$\mu m$) of a bullet land at a fixed height $x$. Note that the global features dominate any deviations, corresponding to the individual characteristics of striation marks.}
+\end{figure}
+
+The smooth curve on the plot represents a segment of a perfect circle with the same radius as the bullet. While the circle is an obvious first choice for fitting the structure, it does not completely capture the bullet surface after it was fired. A discussion of a circular fit and the remaining residual structure can be found in Supplement section~\ref{supp:cylindrical}.
+
+Instead of a circular fit, we use multiple loess fits to model the overall structure and extract the bullet markings. 
+
 ### Identifying groove locations
+
+We first have to identify the locations of the left and right groove in the image. The grooves are assumed to contain no information relevant for determining matches. They also dominate the structure, and therefore need to be removed.  
+Fortunately, the location and appearance of the grooves in the surface profiles is quite consistent.
+Surface measurements reach local maxima around the peak of the groove at either end of the range of $y$, we can then follow the descent of the surface measurements inwards to the valley of the groove. 
+The location of the valleys mark the points at which we should trim the image. The procedure can be described as follows:
+
+1. At a fixed height $x$ extract a bullet's profile (Figure \ref{fig:loess_step1}, with $x = 243.75\mu m$).
+2. For each $y$ value, smooth out any deviations occurring near the minima by twice applying a rolling average with a pre-set \emph{smoothing factor} $s$. (Figure \ref{fig:loess_step3}, smoothing factor $s = 35$ corresponding to 55$\mu m$).
+3. Determine the location of the peak of the left groove by finding the first doubly-smoothed value $y_i$ that is the maximum within its smoothing window (e.g. such that $y_i > y_{i - 1}$ and $y_i > y_{i + 1}$, where $i$ is between 1  and $\lfloor s/2 \rfloor$). We call the location of this peak $p_{\ell}$ (see Figure \ref{fig:loess_step47}). 
+4. Similarly, determine the location of the valley of the left groove by finding the first double-smoothed $y_j$ that is the minimum within its smoothing window. Call the location of this valley $v_{\ell}$.
+5. Reverse the order of the $y$ values and repeat the previous two steps to find the peak and valley of the right groove, $(p_{r}, v_{r})$.
+6. Trim the surface measurements to values within the two grooves (i.e.\ remove all records with $y_i < v_{\ell}$ and $y_i > v_{r}$) (see Figure \ref{fig:loess_step47}).
+
+\begin{figure}[hbtp]
+  \centering
+\begin{subfigure}[t]{\textwidth}\centering
+\caption{\label{fig:loess_step1}Step 1 of identifying groove locations: For a fixed height ($x = 243.75\mu m$)  surface measurements for bullet 1-5 are plotted across the range of $y$.}
+```{r loess_step1, echo=FALSE, fig.width=10, fig.height=3.5, out.width='.5\\textwidth', warning=FALSE,  message=FALSE}
+br111_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 1-5.x3p", sep = "/"))
+br121_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 2-1.x3p", sep = "/"))
+br122_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 2-2.x3p", sep = "/"))
+br123_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 2-3.x3p", sep = "/"))
+br124_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 2-4.x3p", sep = "/"))
+br125_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 2-5.x3p", sep = "/"))
+br126_bullet <- get_crosscut(paste(datadir,"Br1 Bullet 2-6.x3p", sep = "/"))
+
+p1 <- qplot(y, value, data = br111_bullet, size=I(1)) + theme_bw() + ylab("Surface measurements")
+p1
+```
+\end{subfigure}
+\begin{subfigure}[t]{\textwidth}\centering
+\caption{\label{fig:loess_step3}Step 2 of identifying groove locations: The  surface measurements are smoothed twice with a smoothing factor of $s = 35$. The orange rectangle shows an example of the smoothing window. Valleys and peaks are detected, if they are not within the same window.}
+```{r loess_step3, echo=FALSE, fig.width=10, fig.height=3.5, out.width='.5\\textwidth', warning=FALSE,  message=FALSE}
+subdata <- br111_bullet
+smoothfactor <- 35
+
+value_filled <- na.fill(subdata$value, "extend")
+smoothed <- rollapply(value_filled, smoothfactor, function(x) mean(x))
+smoothed_truefalse <- rollapply(smoothed, smoothfactor, function(x) mean(x))
+
+xloc=250
+p3 <- ggplot() +
+  annotate("rect",xmin=xloc-17*1.5625, xmax=xloc+18*1.5625, ymin=80, ymax=200, fill=alpha("orange", alpha=0.5)) + 
+  geom_point(aes(x=(1:length(smoothed_truefalse))*1.5625, y=smoothed_truefalse)) + theme_bw() +
+    geom_vline(xintercept=xloc, colour="grey50") + xlab("y") + ylab("Surface measurements")
+
+p3
+```
+\end{subfigure}
+\begin{subfigure}[t]{\textwidth}\centering
+\caption{\label{fig:loess_step47}Steps 3 -- 6 of identifying groove locations: After smoothing the surface measurements extrema on the left and right are detected (marked by vertical lines, red indicating peaks and blue indicating valleys). Values outside the blue boundaries are removed (shown in grey)}
+```{r loess_step47, echo=FALSE, fig.width=10, fig.height=3.5, out.width='.5\\textwidth', warning=FALSE,  message=FALSE}
+    lengthdiff <- length(subdata$value) - length(smoothed_truefalse)
+    
+    peak_ind_smoothed <- head(which(rollapply(smoothed_truefalse, 3, function(x) which.max(x) == 2)), n = 1)
+    peak_ind <- peak_ind_smoothed + floor(lengthdiff / 2)
+    groove_ind <- head(which(rollapply(tail(smoothed_truefalse, n = -peak_ind_smoothed), 3, function(x) which.min(x) == 2)), n = 1) + peak_ind
+    
+    peak_ind2_smoothed_temp <- head(which(rollapply(rev(smoothed_truefalse), 3, function(x) which.max(x) == 2)), n = 1)
+    peak_ind2_temp <- peak_ind2_smoothed_temp + floor(lengthdiff / 2)
+    groove_ind2_temp <- head(which(rollapply(tail(rev(smoothed_truefalse), n = -peak_ind2_smoothed_temp), 3, function(x) which.min(x) == 2)), n = 1) + peak_ind2_temp
+    
+    peak_ind2 <- length(subdata$value) - peak_ind2_temp + 1
+    groove_ind2 <- length(subdata$value) - groove_ind2_temp + 1
+
+    p4 <- qplot(subdata$y[subdata$y < subdata$y[groove_ind]], subdata$value[subdata$y < subdata$y[groove_ind]], colour=I("grey60"), alpha=I(.25)) +
+        ylim(c(min(subdata$value[!is.nan(subdata$value)]) - 25, max(subdata$value[!is.nan(subdata$value)]) + 25)) +
+        xlim(c(min(subdata$y) - 25, max(subdata$y) + 25)) +
+        geom_point(aes(x, y), data = data.frame(x = subdata$y[subdata$y > subdata$y[groove_ind2]], y = subdata$value[subdata$y > subdata$y[groove_ind2]]), colour=I("grey60"), alpha=I(.25)) +
+        geom_point(inherit.aes = FALSE, aes(x, y), data = data.frame(x = subdata$y[subdata$y < subdata$y[groove_ind2] & subdata$y > subdata$y[groove_ind]], y = subdata$value[subdata$y < subdata$y[groove_ind2] & subdata$y > subdata$y[groove_ind]])) +
+        theme_bw() +
+        geom_vline(xintercept = subdata$y[peak_ind], colour = "red") +
+        geom_vline(xintercept = subdata$y[groove_ind], colour = "blue") +
+        geom_vline(xintercept = subdata$y[peak_ind2], colour = "red") +
+        geom_vline(xintercept = subdata$y[groove_ind2], colour = "blue") +
+      xlab("y") + ylab("Surface measurements")
+
+    p4
+```
+\end{subfigure}
+\caption{Overview of all six steps of the smoothing algorithm to identify and remove grooves from the bullet images.}
+\end{figure}
+
+The smoothing factor $s$ introduced in the algorithm represents the window size to use for a rolling average. Higher values of $s$ therefore lead to more smoothed results. In the groove detection portion of this algorithm, we wish to remove most of the deviation but still maintain enough signal in the groove to detect it. Empirically, a value of $s = 35$ for the smoothing factor seems to work quite well (the smoothing factor is further discussed in Section \ref{smoothing}). It is important to note that the smoothing pass is done twice. That is, the smoothed data is once again smoothed by computing a new rolling average with the same smoothing factor. This bears some similarities to the ideas of John Tukey in his book Exploratory Data Analysis, where he describes a smoothing process called ``twicing" in which a second pass is made on the residuals computed from the first pass and then added back to the result [@tukey:1977]. This has the effect of introducing a bit more variance back into the smoothed data. 
+We instead performed a second smoothing pass on the smoothed data, which has the effect of weighting observations near the center of the window the highest, with the weights linearly dropping off as we reach either end of the smoothing window.
 
 ### Removing curvature
 
+Next, we fit a loess regression to the data. Loess regression [@cleveland:1979] is based on the assumption that the relationship between two random variables $X$ and $Y$ can be described in the form of a smooth, continuous function $f$ with $y_i = f(x_i) + \varepsilon_i$ for all values $i = 1, ..., n$. The function $f$ is approximated via locally weighted polynomial regressions. Parameters of the estimation are $\alpha$, the proportion of all points included in the fit (here, $\alpha = 0.75$), the weighting function and the degree of the polynomial (here, we fit a quadratic regression). 
+
+The main idea of locally weighted regression is to use a weighting routine that  emphasizes the effect of points close by and de-emphasizes the effect of points as they are further away. The weighting function used here is the tricubic function $w(d) = \left(1 - d^3\right)^3$, for $d \in [0,1]$ and $w(d) = 0$ otherwise. Here, $d$ is defined as the distance between $x_i$ and the location of the fit $x_o$ and the maximum distance of the range of the $x$-values for span $\alpha$ in $x_o$.
+
+Figure \ref{fig:loess_fit} shows the loess fit, in blue, overlaid on the processed image of bullet 1-5. The fit seems to do a reasonable job of capturing the structure of the image.
+Figure \ref{fig:loess_resid} shows the residuals from this fit. These residuals are called the **signature** of bullet 1-5.
+
+\begin{figure}[hbtp]
+  \centering
+\begin{subfigure}[b]{.49\textwidth}\centering
+\caption{\label{fig:loess_fit} Loess fit for bullet 1-5.}
+```{r loess_fit, echo=FALSE, fig.width=10, fig.height=3.5, out.width='\\textwidth', warning=FALSE,  message=FALSE}
+
+br111.groove <- get_grooves(br111_bullet)
+
+my.loess <- fit_loess(br111_bullet, br111.groove)
+
+my.loess$fitted + ylab("Surface measurements")
+```
+\end{subfigure}
+\begin{subfigure}[b]{.49\textwidth}\centering
+\caption{\label{fig:loess_resid} Residuals of loess fit for bullet 1-5.}
+```{r boot_loess, echo=FALSE, fig.width=10, fig.height=3.5, out.width='\\textwidth', warning=FALSE}
+#boot.loess <- boot_fit_loess(br111_bullet, br111.groove)
+#poly <- with(boot.loess, data.frame(x = c(y,rev(y)), y=c(high, rev(low))))
+#qplot(x=x, y=y, geom="polygon", fill=I("steelblue"), data=poly) +
+ggplot() +
+  geom_line(aes(x=y, y=resid), data=my.loess$data) +
+  ylab("Residuals of loess fit") + xlab("y") + theme_bw()
+```
+\end{subfigure}
+\caption{Fit and residuals of a loess fit to bullet 1-5 (Barrel~1). The residuals define the {\it signature} of bullet 1-5. %Blue areas around the residuals show  95\% bootstrap confidence intervals (based on $B=1,000$ bootstrap samples).
+}
+\end{figure}
+
 ## Automatic matching
+
+Applying the loess fit to a range of different signatures (see Figure \ref{fig:manualmatch-rgl} for signatures extracted at heights between 50$\mu m$ and 150~$\mu m$) shows the 3D striation marks from two bullets. Signatures of bullet~1 are shown on the left (all extracted from heights below 100$\mu m$) and signatures of bullet 2 are shown on the right (extracted at heights above 100$\mu m$). Signatures are manually aligned, resulting in many of the striation marks to continuously pass from one side to the other. Visually, this allows for an easy assessment of these two bullet lands as a match. However, this match relies on visual inspection and can therefore not be completely objective. The goal of this section is to eliminate the need for a visual inspection during the matching process and replace it by an automatic algorithm. This also allows for a quantification of the quality of the match.
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[width=.65\linewidth]{papers/bullets/images/matchup-rgl-copy.png}
+\caption{\label{fig:manualmatch-rgl}3D view of the manually adjusted side-by-side comparison of bullet~1-5 and bullet 2-1 after removing the curvature. Bullet 2-1 is shaded light grey in the background.}
+\end{figure}
+
+In this section, we describe the algorithm for matching signatures first, and the impact of parameter choices in the subsections thereafter.
 
 ### Algorithm
 
+```{r twolands100, cache=TRUE,  echo=FALSE}
+images <- file.path(datadir, dir(datadir))
+images <- images[grep(" ", images)]
+
+#lof <- processBullets(paths = images[c(5,7)], x = 100)
+subLOFx1 <- processBullets(read.x3p(images[5]), name = images[5], x = 100)
+subLOFx2 <- processBullets(read.x3p(images[7]), name = images[7], x = 100)
+#subLOFx1 <- subset(lof, bullet=="Br1 Bullet 1-5")
+#subLOFx2 <- subset(lof, bullet=="Br1 Bullet 2-1")
+subLOFx1$y <- subLOFx1$y + 23*1.5625 # working now!!!
+lofX <- rbind(data.frame(subLOFx1), data.frame(subLOFx2))
+
+# smooth
+lofX <- lofX %>% group_by(bullet) %>% mutate(
+  l30 = smoothloess(y, resid, span = 0.03)
+)
+
+# cut at .75
+threshold <- .75
+lofX$r05 <- threshold* sign(lofX$l30) * as.numeric(abs(lofX$l30) > threshold)
+lofX$type <- factor(lofX$r05)
+levels(lofX$type) <- c("groove", NA, "peak")
+```
+
+```{r twolands100adjust, echo=FALSE}
+images <- file.path(datadir, dir(datadir))
+images <- images[grep(" ", images)]
+
+#lof <- processBullets(paths = images[c(5,7)], x = 100)
+subLOFx1 <- processBullets(read.x3p(images[5]), name = images[5], x = 100)
+subLOFx2 <- processBullets(read.x3p(images[7]), name = images[7], x = 100)
+#subLOFx1 <- subset(lof, bullet=="Br1 Bullet 1-5")
+#subLOFx2 <- subset(lof, bullet=="Br1 Bullet 2-1")
+subLOFx1$y <- subLOFx1$y - min(subLOFx1$y)
+subLOFx2$y <- subLOFx2$y - min(subLOFx2$y)
+ccf <- ccf(subLOFx1$resid, subLOFx2$resid, lag.max=100, plot=FALSE)
+lag <- ccf$lag[which.max(ccf$acf)]
+subLOFx1$y <- subLOFx1$y - lag*1.5625 
+lofY <- rbind(data.frame(subLOFx1), data.frame(subLOFx2))
+
+```
+
+```{r twolands100match, cache=TRUE, echo=FALSE, dependson='twolands100'}
+matches <- lofX %>% group_by(y) %>% summarise(
+  potential = (length(unique(type)) == 1),
+  allnas = sum(is.na(type))/n(),
+  type1 = na.omit(type)[1],
+  type = paste(type, sep="|", collapse="|"),
+  n = n()
+)
+
+matches$id <- cumsum(matches$allnas == 1) + 1
+matches$lineid <- as.numeric(matches$allnas != 1) * matches$id
+
+isMatch <- function(id, type) {
+  if (id[1] == 0) return(FALSE)
+#  browser()
+  types <- strsplit(type, split = "|", fixed=TRUE) 
+  t1 <- sapply(types, function(x) x[1])
+  t2 <- sapply(types, function(x) x[2])
+  if (all(t1 == "NA")) return(FALSE)
+  if (all(is.na(t2))) return(FALSE)
+  if (all(t2 == "NA")) return(FALSE)
+  
+  peak <- length(grep("peak", c(t1, t2))) > 0
+  groove <- length(grep("groove", c(t1, t2))) > 0
+  if (peak & groove) return(FALSE)
+
+  return(TRUE)
+}
+
+lines <- matches %>% group_by(lineid) %>% summarise(
+  meany = mean(y, na.rm=T),
+  miny = min(y, na.rm=T),
+  maxy = max(y, na.rm=T) + 1.5625,
+  match = isMatch(lineid, type),
+  type = type1[1]
+)
+lines <- subset(lines, lineid != 0)
+```
+
+\begin{figure}[hbtp]
+\centering
+    \begin{subfigure}[t]{\textwidth}\centering
+\caption{Loess smooth of signatures  at a height of $x = 100\mu m$ (span is 0.03).\label{fig:smooth}}{%
+```{r smooth, echo=FALSE, dependson='twolands100', fig.width=7, fig.height=3.5, out.width='.65\\textwidth', warning=FALSE}
+lofX$bulletname <- scrubPath(lofX$bullet)
+qplot(data=lofX, y, resid, colour=I("grey30"), size=I(0.75), geom="line", group=bulletname) +
+  geom_line(aes(y=l30), colour="grey70", size=0.5) +
+  facet_grid(bulletname~.) +
+#  scale_colour_manual("", values=cols) +
+  theme_bw() + ylab("") + 
+  theme(legend.position="none")
+```
+    }
+\end{subfigure}
+\begin{subfigure}[t]{\textwidth}\centering
+\caption{Using a rolling median peaks and valleys are identified for each signature. Peaks and valleys on the signature correspond to striation marks on the bullet's surface. \label{fig:smoothcutb}}{%
+```{r smoothcut, echo=FALSE, dependson='twolands100', fig.width=7, fig.height=3.5, out.width='.65\\textwidth', warning=FALSE}
+#images <- file.path(datadir, dir(datadir))
+  #lof <- processBullets(paths = images[c(5,7)], x = 100)
+
+  subLOFx1 <- processBullets(read.x3p(images[5]), name = images[5], x = 100)
+  subLOFx2 <- processBullets(read.x3p(images[7]), name = images[7], x = 100)
+  lof <- rbind(subLOFx1, subLOFx2)
+
+  lof <- bulletSmooth(lof)
+  bAlign = bulletAlign(lof)
+  lofX <- bAlign$bullet  
+
+  b12 <- unique(lof$bullet)
+  peaks1 <- get_peaks(subset(lofX, bullet==b12[1]), smoothfactor = 25)
+  peaks2 <- get_peaks(subset(lofX, bullet == b12[2]), smoothfactor = 25)
+  peaks1$lines$bullet <- b12[1]
+  peaks2$lines$bullet <- b12[2]
+  peaks <- rbind(peaks1$lines, peaks2$lines)
+  
+  peaks$bulletname <- scrubPath(peaks$bullet)
+  lofX$bulletname <- scrubPath(lofX$bullet)
+  ggplot() + theme_bw() +
+    geom_rect(aes(xmin=xmin, xmax=xmax, fill=factor(type)), ymin=-6, ymax=6, 
+              data=peaks,  alpha=0.2) +
+    geom_vline(aes(xintercept=extrema, colour=factor(type)), 
+               data= peaks, alpha=0.7) +
+    scale_colour_brewer(palette="Set2") + 
+    scale_fill_brewer(palette="Set2") +
+    theme(legend.position="none") + 
+    facet_grid(bulletname~.) +
+    geom_line(aes(x=y, y=l30, group=bulletname), data=lofX) +
+  ylab(expression(paste("Signatures (in ",mu,"m)", sep=""))) 
+```
+}
+\end{subfigure}    
+\begin{subfigure}[t]{\textwidth}\centering
+    \caption{Rectangles in the back identify a striation mark on one of the bullets.  Matching striation marks are indicated by color filled rectangles and marked by an `o'. Mismatches are filled in grey and  marked by an `x'.   \label{fig:smoothcutd}}{%
+```{r smoothmatch, echo=FALSE, dependson='twolands100match', fig.width=7, fig.height=2.75, out.width='.65\\textwidth', warning=FALSE}
+peaks1$lines$bullet <- b12[1]
+peaks2$lines$bullet <- b12[2]
+
+lines <- striation_identify(peaks1$lines, peaks2$lines)
+
+ggplot() + 
+  geom_rect(aes(xmin = xmin, xmax = xmax, fill=factor(type)), ymin = -6, ymax=6.5,  data = lines, alpha=0.2, show.legend = FALSE) +
+  theme(legend.position="bottom") +
+  geom_text(aes(x = meany), y= -5.5, label= "x", data = subset(lines, !match)) +
+  geom_text(aes(x = meany), y= -5.5, label= "o", data = subset(lines, match)) +
+  ylim(c(-6,6.5)) + theme_bw() +
+  geom_line(data=lofX, aes(x=y, y=l30, group=bulletname, linetype=bulletname)) +
+  scale_linetype_discrete("") +
+  scale_colour_manual("", values=cols) +
+  scale_fill_brewer("", palette="Set2", na.value=alpha("grey60", 0.5)) +
+    theme(legend.position = c(1,1.1), legend.justification=c(1,1),
+        legend.background = element_rect(fill=alpha('white', 0.4))) + 
+  ylab(expression(paste("Signatures (in ",mu,"m)", sep=""))) +
+  xlab("y")
+```
+}
+\end{subfigure}
+\caption{\label{fig:match}Matching striation marks: smooth (a), identify peaks and valley (b), and match peaks and valleys between signatures (c).}
+\end{figure}
+
+Figure \ref{fig:match} gives an overview of the automated matching routine: 
+We first identify a stable region for each bullet land and extract the signature at the lowest height in this region, because typically, individual characteristics are best expressed at the lower end of the bullet (see Supplement section \ref{supp:bulletbottom} for a more detailed discussion). 
+
+All of the other steps are done on pairs of bullet lands:
+
+1. **Smooth the two signatures** using a loess with a very small span (see Figure \ref{fig:smooth}). 
+2. Use cross-correlation to **find the best alignment** of the two signatures: shift one of the signatures by the lag indicated by the cross-correlation function (see Figure \ref{fig:ccf} for the cross-correlation function and Figure \ref{fig:crosscutX} for the resulting shift).
+3. Using a rolling average, **identify peaks and valleys** for each of the signatures. We then define an interval around the location of the extrema on each side as one third of the distance to the location of the next extrema (see Figure \ref{fig:smoothcutb}). Peaks and valleys constitute the *striation marks* of the bullet.
+4. **Match striations across signatures:** based on the intervals around the extrema as defined above, we identify joint intervals between two signatures as the areas in which two or more of the individual intervals overlap: a joint interval is defined as the smallest interval that encompasses all of the overlapping intervals. A joint interval is then called a match(ing stria) between the signatures, if all of the intervals are of the same type of extrema, i.e. they are either all peaks or all valleys. In Figure \ref{fig:match} all matches are shown as color-filled rectangles corresponding to their type of extrema (peaks are shown in orange, and valleys in green). Non-matching intervals are left grey. 
+5. **Extract features from the aligned signatures and the matches between them:** many different features could be extracted. Here, we describe a few of the ones that can be found in the literature and some that we found to be of practical relevance:
+
+i. Maximal number of CMS (consecutive matching striae), and, similarly, the number of consecutively non-matching striae (CNMS), 
+ii. Number of matches and non-matches,
+iii. The value of the cross-correlation function (ccf) between the aligned signatures \cite{vorburger:2011},
+iv. Average difference $D$ between signatures, defined as the Euclidean vertical distance between surface measurements of aligned signatures. Let $f(t)$ and $g(t)$ be smoothed, aligned signatures:
+\[
+D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2,
+\]
+v. The sum $S$ of average absolute heights of matched extrema: for each of the two matched stria, compute the average of the absolute heights of the peaks or valleys. $S$ is then defined as the sum of all these averages. 
+
+The difference $D$ between signatures is here defined as the Euclidean distance (in $\mu m$). In the paper by @ma:2004, distance is defined as a measure relative to the first signature, which serves as a comparison reference and is therefore a unitless quantity. 
+
+Counting the maximal number of CMS is part of the current practice to identify bullet matches [@nichols:1997, @nichols:2003, @nichols:2003b]. 
+In the example of Figure \ref{fig:match}, the number of consecutive matching striations (CMS) is fifteen, a high number indicative of a match between the bullets. 
+ Note that the definition of CMS given in this paper does not match the one given in @thompson:2013. There, CMS is defined only in terms of matching peaks without regarding valleys. Additionally, peaks in  @thompson:2013 are  used only if they can be identified and matched `within a tolerable range' between lands. The definition given here is computationally less complex, but should yield highly correlated values, because of the requirement to only consider signatures from a stable region in the land (see Section \ref{sec:heights} for further details on stability of regions). In the Hamby study, the definition of CMS by @thompson:2013 leads to approximately half of the values of CMS defined in this paper (with a correlation coefficient between the values of the two definitions of about 0.92). 
+For lead bullets, such as used in the Hamby study, @biasotti:1959 considered four or more consecutive peaks (corresponding to eight or more consecutive lines in our definition) to be sufficient evidence of a match.  
+
+Determining a threshold such that CMS values above the threshold indicate a match with high reliability is beyond the scope of this work, even though it is critically important in practice. We provide some ideas in the next section, but first we assess the robustness of the matching algorithm to different choices of the parameter values.
+
 ### Horizontal alignment
+
+Signatures of each of the two lands, 1-5 and 2-1,  in Figure \ref{fig:manualmatch-rgl} are shown in Figure \ref{fig:cross100} extracted at a height of $x = 100\mu m$. Striation marks show up in these representations as peaks and valleys.  The individual characteristics are quite prominent and, again, suggest a match between the lands. A horizontal shift of one of the signatures (result shown in Figure \ref{fig:crosscutX}) emphasizes the strong similarities. 
+
+\begin{figure}[hbtp]
+\centering
+\begin{subfigure}[b]{.49\textwidth}\centering
+\caption{Raw bullet land signatures.\label{fig:crosscut}}{%
+```{r crosscuts, echo=FALSE, dependson='twolands100', fig.width=7, fig.height=3, out.width='\\textwidth'}
+lof$bulletname <- scrubPath(lof$bullet)
+qplot(y, resid, group=bulletname, colour=bulletname, data=lof, 
+      geom="line") + 
+  scale_colour_manual("", values=cols) + theme_bw() +
+  theme(legend.position = c(1, 1.1), legend.justification=c("right", "top"),
+        legend.background = element_rect(fill=alpha('white', 0.4))) + 
+  ylab("Residuals of loess fit")
+```
+    }
+\end{subfigure}    
+\begin{subfigure}[b]{.49\textwidth}\centering
+    \caption{Aligned signatures.\label{fig:crosscutX}}{%
+```{r crosscutsX, echo=FALSE, dependson='twolands100', fig.width=7, fig.height=3, out.width='\\textwidth'}
+lofY$bulletname <- scrubPath(lofY$bullet)
+qplot(y+min(lof$y), resid, group=bulletname, colour=bulletname, data=lofY, 
+      geom="line") + xlab("y") +
+  scale_colour_manual("", values=cols) + theme_bw() +
+  theme(legend.position = c(1, 1.1), legend.justification=c("right", "top"),
+        legend.background = element_rect(fill=alpha('white', 0.4))) + 
+  ylab("Residuals of loess fit")
+```
+    }
+\end{subfigure}
+\caption{\label{fig:cross100}Signatures of bullets 1-5 and 2-1 taken at  heights of $x = 100\mu m$. A horizontal shift of the values of bullet 1-5 to the right shows the similarity of the striation marks.}
+\end{figure}
+
+For this alignment we use the cross-correlation function to find a maximal amount of agreement between the signatures [@bachrach:2002, @chu:2010, @vorburger:2011, @thompson:2013].
+This horizontal shift is based on the cross-correlation between the two signatures: let $f(t)$ and $g(t)$ define the signature values  at $t$, where $t$ are locations between 0~$\mu m$ and about 2500 $\mu m$, 1.5625 $\mu m$ apart.
+The cross-correlation between $f$ and $g$ at lag $k$ is then defined as
+\[
+(f * g) (k) = \sum_t f(t+k) g(t),
+\]
+with suitably defined limits for the summation.
+
+\begin{figure}[hbtp]
+  \centering
+```{r ccf, echo=FALSE, fig.width = 8, fig.height = 3, out.width = '.65\\textwidth'}
+lag <- ccf$lag[which.max(ccf$acf)]
+qplot(x=ccf$lag, xend=ccf$lag, y = 0, yend= ccf$acf, geom="segment", colour = I("grey50")) + 
+  theme_bw() + ylab("Correlation") + xlab("Lag k") +
+  geom_segment(aes(x = lag, xend = lag, y = 0, yend =  max(ccf$acf)), colour="black") + 
+  scale_x_continuous(breaks = c(-100, -50, lag, 0, 50, 100),
+                     minor_breaks = c(-75,-25,25, 75))
+```
+\caption{\label{fig:ccf}Cross-correlation function between the two signatures shown in Figure \ref{fig:crosscut} at lags between -100 and 100. The correlation is maximized at a lag of -17, indicating the largest amount of agreement between the signatures. Figure \ref{fig:crosscutX} shows the lag-shifted signatures.}
+\end{figure}
 
 ### Impact of bullet height
 
