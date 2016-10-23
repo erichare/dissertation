@@ -1,0 +1,36 @@
+## Smooth deformations
+
+```{r}
+library(dplyr)
+library(x3pr)
+library(x3prplus)
+library(plotly)
+
+br111 <- read.x3pplus("~/GitHub/imaging-paper/images/Hamby (2009) Barrel/bullets/Br1 Bullet 1-1.x3p")
+br111_fortified <- fortify_x3p(br111)
+br111_fortsub <- br111_fortified
+br111_fortsub$value[br111_fortsub$y > 1000 & br111_fortsub$y < 1500] <- br111_fortsub$value[br111_fortsub$y > 1000 & br111_fortsub$y < 1500] / 2
+
+br111_new <- unfortify_x3p(br111_fortsub)
+
+plot_ly(z = br111_new$surface.matrix, type = "surface")
+```
+
+## Non-smooth deformations
+
+```{r}
+
+```
+
+## Shortened Sequences
+
+```{r}
+
+```
+
+## Elongated Sequences
+
+```{r}
+
+```
+
