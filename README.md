@@ -48,3 +48,11 @@ Organize Framework for generating lineup experiments
     b. Simulate in order to check theory
     c. Provide Examples / Choices
 4. Provide P-Values based on sampling scheme
+
+## TODO 
+
+- Span smaller than our original smoothing (5, 10, 15, 20, 25), plus NIST style
+- Give script to Dr. Hofmann
+- Send slides from NIST to Dr. Hofmann
+- Use Cary persistence to show declining probabilities as a function of the number of repetitions
+- Show pictures of the above
