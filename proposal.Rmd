@@ -10,10 +10,12 @@ output:
         before_body: body.tex
         after_body: includes.tex
 bibliography: references.bib
+geometry: top=0.55in, bottom=1in, left=1.25in, right=1.02in
 fontsize: 12pt
 header-includes:
     - \usepackage{subcaption}
     - \usepackage{pdflscape}
+    - \usepackage{float}
 ---
 
 \newpage

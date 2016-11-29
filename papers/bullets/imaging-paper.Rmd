@@ -20,8 +20,7 @@ library(RColorBrewer)
 library(ggplot2)
 library(scales)
 library(dplyr)
-library(x3pr)
-library(x3prplus)
+library(bulletr)
 library(grid)
 library(gridExtra)
 library(zoo)
@@ -36,7 +35,7 @@ library(randomForest)
 
 ## Introduction
 
-Firearm examination is a forensic tool used to determine whether two bullets were fired from the same gun barrel. This process has broad applicability in terms of convictions in the United States criminal justice system. Firearms identification has long been considered an accepted and reliable procedure, but in the past ten years has undergone more significant scrutiny. In 2005, in *United States vs. Green*, the court ruled that the forensic expert could not confirm that the bullet casings came from a specific weapon with certainty, but could merely ``describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011].
+Firearm examination is a forensic tool used to help the court determine whether two bullets were fired from the same gun barrel. This process has broad applicability in terms of convictions in the United States criminal justice system. Firearms identification has long been considered an accepted and reliable procedure, but in the past ten years has undergone more significant scrutiny. In 2005, in *United States vs. Green*, the court ruled that the forensic expert could not confirm that the bullet casings came from a specific weapon with certainty, but could merely ``describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011].
 
 In 2009, the National Academy of Sciences published a report [@NAS:2009] questioning the scientific validity of many forensic methods including firearm examination. The report states that "[m]uch forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing to explain the limits of the discipline."
 
@@ -72,10 +71,14 @@ Each fired bullet is provided in the form of a set of six x3p files, where each 
 
 The typical number and width of striation markings on bullets varies significantly depending on the gun barrel. For instance, a Smith and Wesson barrel with a land-width of 2.4 millimeters contained an average 60 striae, with an average width of about 0.08 millimeters [@chu:2011].
 
-The purpose of our paper is to present an automatic matching routine that allows for a completely objective assessment of the quality of a match. Our algorithm is fully open source and available on GitHub [@x3prplus]. This transparency allows for a greater understanding of the individual steps involved in the bullet matching process, and allows other forensic examiners, as well as outside observers, examine the factors that separate known bullet matches from non-matches. We have chosen to perform the matching on a land-to-land level, rather than bullet-to-bullet. Although doing so introduces an implicit assumption of independence between lands, assuming independence only serves to make the task more challenging.
+The purpose of our paper is to present an automatic matching routine that allows for a completely objective assessment of the quality of a match. While we assess the performance of the algorithm in terms of a binary decision of match vs. non-match using a 50% probability cut-off, our primary goal is to highlight the features that are statistically associated with matches and non-matches, and to provide a quantitative assessment of this association. In a real-world application of our algorithm, the raw scores would need further analysis and scrutiny, and it is likely a 50% cut-off would be an inappropriate choice on the basis of reasonable doubt.
+
+Our algorithm is fully open source and available on GitHub [@x3prplus]. This transparency allows for a greater understanding of the individual steps involved in the bullet matching process, and allows other forensic examiners, as well as outside observers, examine the factors that separate known bullet matches from non-matches. We have chosen to perform the matching on a land-to-land level, rather than bullet-to-bullet. Although doing so introduces an implicit assumption of independence between lands, assuming independence only serves to make the task more challenging.
 The original paper on the complete Hamby study already reports the successful use of several computer-assisted methods; aside from a zero false positive rate, no further details on a false-negative error rate for bullets are given nor are error rates for land-to-land matches mentioned. 
 
-A procedure for bullet matching using the BulletTrax3D system is described in @roberge:2006. This study is based on another set of ten consecutively rifled barrels; matches are identified based on a bullet-to-bullet correlation score. The authors state that this process `could be automated', but no implementation of the algorithm is available. Modern automated techniques using 3D images have also been conducted by @riva:2014, but this work applies to striae found on cartridge cases and not bullets. Other work on 3D images has been conducted by @petraco:2012, which also describes work carried out on cartridge cases, as well as screwdriver striation patterns, with promising results. We aim to use similar ideas of automated 3D image analysis, and apply this work to bullet surfaces with the modern tools enabled by the R statistical software.
+Work has been done to quantify toolmark similarity by @lock2013significance. This algorithm determines an optimal matching window between two toolmark signatures, and then performs a set of both coordinated and independent shifts. Given a match, the coordinated shifts would be expected to yield correlation values higher than those obtained from independent shifts. This is assessed using a Mann-Whitney U Statistic. A procedure for bullet matching using the BulletTrax3D system is described in @roberge:2006. This study is based on another set of ten consecutively rifled barrels; matches are identified based on a bullet-to-bullet correlation score. The authors state that this process `could be automated', but no implementation of the algorithm is available. 
+
+Modern automated techniques using 3D images have also been conducted by @riva:2014, but this work applies to striae found on cartridge cases and not bullets. This algorithm performs alignment of striae by rotation of the XY plane, which is not generalizable to bullets in which the XY plane is not flat. Other work on 3D images has been conducted by @petraco:2012, which also describes work carried out on cartridge cases, as well as screwdriver striation patterns, with promising results. We aim to use similar ideas of automated 3D image analysis, and apply this work to bullet surfaces with the modern tools enabled by the R statistical software.
 
 The remainder of this paper is structured as follows: We first discuss two methods of modeling the class structure of the bullet surfaces. We then proceed to describing an automatic matching routine which we evaluate on the bullets made available through the Hamby study.
 
@@ -89,7 +92,7 @@ In an approach to analyze the striation pattern, we extract a **bullet profile**
 
 cols = c(alpha("grey60", alpha=0.6), alpha("black", 0.5))
 
-br111 <- read.x3p(paste(datadir,"Br1 Bullet 1-5.x3p", sep = "/"))
+br111 <- read_x3p(paste(datadir,"Br1 Bullet 1-5.x3p", sep = "/"))
 dbr111 <- fortify_x3p(br111)
 
 pars <- data.frame(getCircle(dbr111$y, dbr111$value))
@@ -258,8 +261,8 @@ images <- file.path(datadir, dir(datadir))
 images <- images[grep(" ", images)]
 
 #lof <- processBullets(paths = images[c(5,7)], x = 100)
-subLOFx1 <- processBullets(read.x3p(images[5]), name = images[5], x = 100)
-subLOFx2 <- processBullets(read.x3p(images[7]), name = images[7], x = 100)
+subLOFx1 <- processBullets(read_x3p(images[5]), name = images[5], x = 100)
+subLOFx2 <- processBullets(read_x3p(images[7]), name = images[7], x = 100)
 #subLOFx1 <- subset(lof, bullet=="Br1 Bullet 1-5")
 #subLOFx2 <- subset(lof, bullet=="Br1 Bullet 2-1")
 subLOFx1$y <- subLOFx1$y + 23*1.5625 # working now!!!
@@ -282,8 +285,8 @@ images <- file.path(datadir, dir(datadir))
 images <- images[grep(" ", images)]
 
 #lof <- processBullets(paths = images[c(5,7)], x = 100)
-subLOFx1 <- processBullets(read.x3p(images[5]), name = images[5], x = 100)
-subLOFx2 <- processBullets(read.x3p(images[7]), name = images[7], x = 100)
+subLOFx1 <- processBullets(read_x3p(images[5]), name = images[5], x = 100)
+subLOFx2 <- processBullets(read_x3p(images[7]), name = images[7], x = 100)
 #subLOFx1 <- subset(lof, bullet=="Br1 Bullet 1-5")
 #subLOFx2 <- subset(lof, bullet=="Br1 Bullet 2-1")
 subLOFx1$y <- subLOFx1$y - min(subLOFx1$y)
@@ -355,8 +358,8 @@ qplot(data=lofX, y, resid, colour=I("grey30"), size=I(0.75), geom="line", group=
 #images <- file.path(datadir, dir(datadir))
   #lof <- processBullets(paths = images[c(5,7)], x = 100)
 
-  subLOFx1 <- processBullets(read.x3p(images[5]), name = images[5], x = 100)
-  subLOFx2 <- processBullets(read.x3p(images[7]), name = images[7], x = 100)
+  subLOFx1 <- processBullets(read_x3p(images[5]), name = images[5], x = 100)
+  subLOFx2 <- processBullets(read_x3p(images[7]), name = images[7], x = 100)
   lof <- rbind(subLOFx1, subLOFx2)
 
   lof <- bulletSmooth(lof)
@@ -511,7 +514,7 @@ paths <- file.path(datadir, dir(datadir))
 paths <- paths[grep("Br[0-9]", paths)]
 
 crosscuts <- seq(100,250, by=25)
-lof <- processBullets(read.x3p(paths[37]), name = paths[37], x = crosscuts)
+lof <- processBullets(read_x3p(paths[37]), name = paths[37], x = crosscuts)
 lof$bullet <- paste(scrubPath(lof$bullet), lof$x)
 
 reslist <- lapply(1:length(crosscuts[-1]), function(i) {
@@ -989,8 +992,8 @@ The matching algorithm is sensitive to the parameter choices made. The heights a
 
 The Hamby study serves as our evaluation `database'. It consists of only 35 bullets -- this is obviously not a particularly realistic scenario for an automatic matching procedure, but for now we are unaware of other databases containing bullets in the x3p format.
  
-The feasibility of creating a database of ballistic images that could be used to identify guns used in crimes was evaluated in a 2008 report [@nap:2008] by the National Research Council. The evaluation was investigating the scalability of NIBIN (National Integrated Ballistic Information Network), which uses proprietary matching algorithms provided by IBIS. The bottom line of the report was that in spite of the many technical and practical hurdles, solutions to all but one problem could be found. The problem that remained is that statistically, the quality of the matching algorithm (in this case, of breech-face marks and firing pin impressions) could not withstand a hugely increased number of records while still maintaining a reasonable workload for forensic examiners, who have to examine possible matches suggested by the system. 
-The findings of the NRC report on ballistic imaging are based on two-dimensional greyscale images, which the committee argued were not reliable enough for distinguishing between fine marks. This finding coincides with the assessment by @dekinder:2004 based on the IBIS Heritage system. A further re-assessment by @deceuster:2015 came to the same conclusions based on the EvoFinder system. 
+The feasibility of creating a database of images that could be used to identify guns used in crimes was evaluated in a 2008 report [@nap:2008] by the National Research Council. The evaluation was investigating the scalability of NIBIN (National Integrated Ballistic Information Network), which uses proprietary matching algorithms provided by IBIS. The bottom line of the report was that in spite of the many technical and practical hurdles, solutions to all but one problem could be found. The problem that remained is that statistically, the quality of the matching algorithm (in this case, of breech-face marks and firing pin impressions) could not withstand a hugely increased number of records while still maintaining a reasonable workload for forensic examiners, who have to examine possible matches suggested by the system. 
+The findings of the NRC report on imaging are based on two-dimensional greyscale images, which the committee argued were not reliable enough for distinguishing between fine marks. This finding coincides with the assessment by @dekinder:2004 based on the IBIS Heritage system. A further re-assessment by @deceuster:2015 came to the same conclusions based on the EvoFinder system. 
 The NRC report also found that results from 2D images can be improved when matches are based on 3D images. This is consistent with the importance of features found here: out of the top five features (see Figure \ref{fig:importance}), only the total number of matches and mismatches are available for a match based on 2D features.
 
 By suggesting an automated algorithm that first removes class characteristics, such as the grooves and the curvature of the bullet to reveal the region of the  land, then identifies peaks and valleys on this land, we reduce subjectivity and with it possible sources of bias. In particular, 'the concept of counting striations is subjective and based on experience' [@miller:1998]. The steps outlined in this paper could also help explore other important forensic science problems. In particular, more general toolmark examination can benefit from this detection and removal of the overall structure and the extraction of features from deviations of this structure.
@@ -1014,7 +1017,7 @@ Figure \ref{fig:fixedX2} shows the  profile of surface measurements of bullet 1-
 
 cols = c(alpha("grey60", alpha=0.6), alpha("black", 0.5))
 
-br111 <- read.x3p(paste(datadir,"Br1 Bullet 1-5.x3p", sep = "/"))
+br111 <- read_x3p(paste(datadir,"Br1 Bullet 1-5.x3p", sep = "/"))
 dbr111 <- fortify_x3p(br111)
 
 pars <- data.frame(getCircle(dbr111$y, dbr111$value))
@@ -1132,7 +1135,7 @@ A single cylinder as a fit is unlikely to be a particularly good fit, because th
 db1 <- NULL
 for (i in 1:6) {
   bname <- sprintf(file.path(datadir, "Br1 Bullet 1-%d.x3p"), i)
-  dbi <- fortify_x3p(read.x3p(bname))
+  dbi <- fortify_x3p(read_x3p(bname))
   dbi$part <- i
   db1 <- rbind(db1, dbi)
 }
@@ -1146,7 +1149,7 @@ db1 <- db1 %>% group_by(part, x) %>% do (
 db2 <- NULL
 for (i in 1:6) {
   bname <- sprintf(file.path(datadir, "Br1 Bullet 2-%d.x3p"), i)
-  dbi <- fortify_x3p(read.x3p(bname))
+  dbi <- fortify_x3p(read_x3p(bname))
   dbi$part <- i
   db2 <- rbind(db2, dbi)
 }
@@ -1192,7 +1195,7 @@ paths <- file.path(datadir, dir(datadir))
 paths <- paths[grep(" ", paths)]
 
 crosscuts <- seq(100, 400, by = 50)
-lof <- processBullets(read.x3p(paths[5]), name = scrubPath(paths[5]), x = crosscuts)
+lof <- processBullets(read_x3p(paths[5]), name = scrubPath(paths[5]), x = crosscuts)
 lof$bullet <- paste(lof$bullet, lof$x)
 
 reslist <- lapply(crosscuts[-1], function(cc) {
@@ -1253,7 +1256,7 @@ unknowndatadir <- "images/Hamby (2009) Barrel/bullets"
 ccs <- read.csv("csvs/crosscuts-25-old.csv")
 ccs$path <- file.path(knowndatadir, basename(as.character(ccs$path)))
 all_bullets <- lapply(as.character(ccs$path), function(x) {
-  result <- read.x3p(x)
+  result <- read_x3p(x)
   result[[3]] <- x
   names(result)[3] <- "path"
   
@@ -1294,7 +1297,7 @@ Figure \ref{fig:overview} shows an overview of the signatures at different heigh
 ```{r one-bulletland-sd, echo=FALSE, dependson='setup-signatures', fig.height=5, fig.width=8, out.width='0.7\\textwidth', warning=FALSE}
 k <- 1
 x <- as.character(ccs$path)[k]
-land <- read.x3p(x)
+land <- read_x3p(x)
 land[[3]] <- x
 names(land)[3] <- "path"
 
@@ -1316,7 +1319,7 @@ At larger heights individual characteristics become less distinctive, making tru
 
 \begin{figure}[hbtp]
 \centering
-```{r crosscuts-sd, echo=FALSE, fig.height=5, fig.width=8, out.width='.7\\textwidth', dependson='setup-signatures'}
+```{r crosscuts-sd, echo=FALSE, fig.height=5, fig.width=8, out.width='.7\\textwidth', dependson='setup-signatures', message=FALSE}
 qplot(x, sd, data=stats, geom="line", group=bullet, alpha=I(0.5)) + theme_bw() +
   geom_smooth(group=1) + 
   xlab("Height (from the bottom of the bullet)") +
