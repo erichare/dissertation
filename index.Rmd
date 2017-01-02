@@ -85,14 +85,19 @@ This work has been submitted and accepted (with revisions) by the Annals of Appl
 
 ## A Web Framework for Bullet Matching
 
-The web front-end allows forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display includes a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers.
+To tie the pieces together, we need to apply the software development ideas formulated in Chapter One with the algorithms developed in Chapter Two. This means we need a reproducible web-based software system that opens the R programming tools used for bullet matching to forensic examiners and forensic scientists who may not have the knowledge of, or desire to learn, programming. There are three primary components to this software system: The database, the front-end application, and the back-end application.
 
-Figure \@ref(fig:bullets-app). displays a prototype user interface for this framework.
+The first component is a database. Our database builds on top of the NIST Ballistics Research Database\footnote{https://tsapps.nist.gov/NRBTD}. NIST's database provides an open and transparent source of raw data files representing surface topologies of toolmarks. Our database allows the storage of **processed** versions of these toolmark surfaces, tracking the parameters necessary to reproduce the results. This allows for a quantitative assessment of each step of our bullet matching algorithm. The database is discussed at length in Chapter Three.
+
+The second component of our software system is a web front-end aimed at those who do not have R programming skills. The web front-end allows forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display includes a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \@ref(fig:bullets-app) displays a screenshot of the this component.
 
 ```{r bullets-app, echo=FALSE, fig.cap='Prototype user interface for the bullet matching algorithm.', fig.pos='H'}
 knitr::include_graphics("images/bullets_app.png")
 ```
 
+Finally, the third component is a web-based backend designed for the further assessment and development of the algorithms itself. This is aimed at researchers and scientists who wish to iterate on the performance of the algorithm by continuing to assess its results in the context of the database, and the different processed versions of toolmark images available.
+
+Together, these components form the basis of a modern software system that implements the algorithms from Chapter Two in a framework that meets the software design goals outlined in Chapter One. Specifically, this system is **modular** in that the different components can be substituted as needed to fit new use cases. The system is also **extensible**, as functionality can be added to the R package which immediately gets reflected by the web-based systems. It also is fully **web-based**, requiring just a web browser to access. And finally, the results are all **reproducible** as each parameter yielding intermediate results is tracked throughout. 
 \newpage
 
 # Designing Modular Software: A Case Study in Introductory Statistics
