@@ -1,3 +1,18 @@
+\chapter{AUTOMATIC MATCHING OF BULLET LANDS}
+
+\begin{center}
+
+A paper submitted to the \textbf{Annals of Applied Statistics}. \\
+Eric Hare, Heike Hofmann, Alicia Carriquiry
+
+\textbf{Abstract}
+
+\end{center}
+
+In 2009, the National Academy of Sciences published a report questioning the scientific validity of many forensic methods including firearm examination. Firearm examination is a forensic tool used to help the court determine whether two bullets were fired from the same gun barrel. During the firing process, rifling, manufacturing defects, and impurities in the barrel create striation marks on the bullet. Identifying these striation markings in an attempt to match two bullets is one of the primary goals. We propose an automated framework for the analysis of the 3D surface measurements, that first transcribes the markings into a 2D plotting framework. This makes identification of matches easier and allows for a quantification of both matches and matchability of barrels. The automatic matching routine we propose manages to (a) correctly identify lands (the surface between two bullet grooves) with too much damage to be suitable for comparison, and (b) correctly identify all 10,384 land-to-land matches of the James Hamby study.
+
+\newpage
+
 ```{r, fig.keep='all', cache=FALSE, echo=FALSE, eval=TRUE, message=F, warning=F}
 #rm(list=ls())
 #wd <- getwd()
@@ -33,7 +48,7 @@ library(reshape2)
 library(randomForest)
 ```
 
-## Introduction
+# Introduction
 
 Firearm examination is a forensic tool used to help the court determine whether two bullets were fired from the same gun barrel. This process has broad applicability in terms of convictions in the United States criminal justice system. Firearms identification has long been considered an accepted and reliable procedure, but in the past ten years has undergone more significant scrutiny. In 2005, in *United States vs. Green*, the court ruled that the forensic expert could not confirm that the bullet casings came from a specific weapon with certainty, but could merely ``describe" other casings which are similar. Further court cases in the late 2000s expressed caution about the use of firearms identification evidence [@giannelli:2011].
 
@@ -53,11 +68,11 @@ Throughout this paper, we work with images from the James Hamby Consecutively Ri
 3D topographical images of each bullet were obtained using a NanoFocus lens at 20x magnification and made publicly available on the NIST Ballistics Database Project\footnote{\url{http://www.nist.gov/forensics/ballisticsdb/hamby-consecutively-rifled-barrels.cfm}} in a format called x3p (XML 3-D Surface Profile). The x3p format conforms to the ISO5436-2 standard\footnote{\url{http://sourceforge.net/p/open-gps/mwiki/X3p/}}, implemented to provide a simple and standard conforming way to exchange 2D and 3D profile data. It was adopted by the OpenFMC (Open Forensic Metrology Consortium\footnote{\url{http://www.openfmc.org/}}), a group of academic, industry, and government firearm forensics researchers whose aim is to establish best practices for researchers using metrology in forensic science. An open-source package for working with x3p files has been written in R [@R] by Dr. Nicholas Petraco which we build upon in the development of our algorithm [@x3pr]. This package enables the direct reading and manipulation of x3p files.
 
 ```{r sidex3p, echo=FALSE, fig.align='center', fig.cap='View of the data along the circumference of the bullet (circular segment of about 30 degrees).'}
-include_graphics("papers/bullets/images/sidex3p.png")
+include_graphics("images/sidex3p.png")
 ```
 
 ```{r topx3p, echo=FALSE, fig.align='center', fig.cap='Frontal view of a bullet land (lower end of the view is the bottom of the bullet).'}
-include_graphics("papers/bullets/images/topx3p.png")
+include_graphics("images/topx3p.png")
 ```
 
 ```{r, echo=FALSE}
@@ -82,7 +97,7 @@ Modern automated techniques using 3D images have also been conducted by @riva:20
 
 The remainder of this paper is structured as follows: We first discuss two methods of modeling the class structure of the bullet surfaces. We then proceed to describing an automatic matching routine which we evaluate on the bullets made available through the Hamby study.
 
-## Bullet signatures
+# Bullet signatures
 
 In an approach to analyze the striation pattern, we extract a **bullet profile** [@ma:2004] by taking a cross section of the surface measurements at a fixed height $x$ along the bullet land. Figure \ref{fig:fixedX} shows a plot of the side profile of a bullet land. It can be seen that the global structure of the land dominates the appearance of the plot. The grooves can be clearly identified on the left and right side, and the curvature of the surface is the most visible feature in the middle.
 
@@ -118,7 +133,7 @@ The smooth curve on the plot represents a segment of a perfect circle with the s
 
 Instead of a circular fit, we use multiple loess fits to model the overall structure and extract the bullet markings. 
 
-### Identifying groove locations
+## Identifying groove locations
 
 We first have to identify the locations of the left and right groove in the image. The grooves are assumed to contain no information relevant for determining matches. They also dominate the structure, and therefore need to be removed.  
 Fortunately, the location and appearance of the grooves in the surface profiles is quite consistent.
@@ -205,7 +220,7 @@ p3
 The smoothing factor $s$ introduced in the algorithm represents the window size to use for a rolling average. Higher values of $s$ therefore lead to more smoothed results. In the groove detection portion of this algorithm, we wish to remove most of the deviation but still maintain enough signal in the groove to detect it. Empirically, a value of $s = 35$ for the smoothing factor seems to work quite well (the smoothing factor is further discussed in Section \ref{smoothing}). It is important to note that the smoothing pass is done twice. That is, the smoothed data is once again smoothed by computing a new rolling average with the same smoothing factor. This bears some similarities to the ideas of John Tukey in his book Exploratory Data Analysis, where he describes a smoothing process called ``twicing" in which a second pass is made on the residuals computed from the first pass and then added back to the result [@tukey:1977]. This has the effect of introducing a bit more variance back into the smoothed data. 
 We instead performed a second smoothing pass on the smoothed data, which has the effect of weighting observations near the center of the window the highest, with the weights linearly dropping off as we reach either end of the smoothing window.
 
-### Removing curvature
+## Removing curvature
 
 Next, we fit a loess regression to the data. Loess regression [@cleveland:1979] is based on the assumption that the relationship between two random variables $X$ and $Y$ can be described in the form of a smooth, continuous function $f$ with $y_i = f(x_i) + \varepsilon_i$ for all values $i = 1, ..., n$. The function $f$ is approximated via locally weighted polynomial regressions. Parameters of the estimation are $\alpha$, the proportion of all points included in the fit (here, $\alpha = 0.75$), the weighting function and the degree of the polynomial (here, we fit a quadratic regression). 
 
@@ -242,19 +257,19 @@ ggplot() +
 }
 \end{figure}
 
-## Automatic matching
+# Automatic matching
 
 Applying the loess fit to a range of different signatures (see Figure \ref{fig:manualmatch-rgl} for signatures extracted at heights between 50$\mu m$ and 150~$\mu m$) shows the 3D striation marks from two bullets. Signatures of bullet~1 are shown on the left (all extracted from heights below 100$\mu m$) and signatures of bullet 2 are shown on the right (extracted at heights above 100$\mu m$). Signatures are manually aligned, resulting in many of the striation marks to continuously pass from one side to the other. Visually, this allows for an easy assessment of these two bullet lands as a match. However, this match relies on visual inspection and can therefore not be completely objective. The goal of this section is to eliminate the need for a visual inspection during the matching process and replace it by an automatic algorithm. This also allows for a quantification of the quality of the match.
 
 \begin{figure}[hbtp]
 \centering
-\includegraphics[width=.65\linewidth]{papers/bullets/images/matchup-rgl-copy.png}
+\includegraphics[width=.65\linewidth]{images/matchup-rgl-copy.png}
 \caption{\label{fig:manualmatch-rgl}3D view of the manually adjusted side-by-side comparison of bullet~1-5 and bullet 2-1 after removing the curvature. Bullet 2-1 is shaded light grey in the background.}
 \end{figure}
 
 In this section, we describe the algorithm for matching signatures first, and the impact of parameter choices in the subsections thereafter.
 
-### Algorithm
+## Algorithm
 
 ```{r twolands100,  echo=FALSE}
 images <- file.path(datadir, dir(datadir))
@@ -449,7 +464,7 @@ For lead bullets, such as used in the Hamby study, @biasotti:1959 considered fou
 
 Determining a threshold such that CMS values above the threshold indicate a match with high reliability is beyond the scope of this work, even though it is critically important in practice. We provide some ideas in the next section, but first we assess the robustness of the matching algorithm to different choices of the parameter values.
 
-### Horizontal alignment
+## Horizontal alignment
 
 Signatures of each of the two lands, 1-5 and 2-1,  in Figure \ref{fig:manualmatch-rgl} are shown in Figure \ref{fig:cross100} extracted at a height of $x = 100\mu m$. Striation marks show up in these representations as peaks and valleys.  The individual characteristics are quite prominent and, again, suggest a match between the lands. A horizontal shift of one of the signatures (result shown in Figure \ref{fig:crosscutX}) emphasizes the strong similarities. 
 
@@ -505,7 +520,7 @@ qplot(x=ccf$lag, xend=ccf$lag, y = 0, yend= ccf$acf, geom="segment", colour = I(
 \caption{\label{fig:ccf}Cross-correlation function between the two signatures shown in Figure \ref{fig:crosscut} at lags between -100 and 100. The correlation is maximized at a lag of -17, indicating the largest amount of agreement between the signatures. Figure \ref{fig:crosscutX} shows the lag-shifted signatures.}
 \end{figure}
 
-### Impact of bullet height
+## Impact of bullet height
 
 The height at which signatures are extracted for a comparison between bullet lands matters -- signatures taken from heights that are further apart, show more pronounced differences between the signatures. 
 This poses both a caveat to matching attempts as well as an opportunity for quality control: we have to be aware of the height that was used in a matching. Visually, matches degrade if the signatures upon which the match is based are from heights further than 200$\mu m$ apart  (see Supplement section \ref{supp:ccf} for a more thorough discussion). However, we can extract signatures from multiple heights of the same bullet land for an initial assessment of its quality. By comparing signatures from heights that are not too far apart --  25~$\mu m$ to 50~$\mu m$ -- we get an indication whether the signatures come from a rapidly changing section of the surface, indicative of a break-off or some other damage, or from a stable section, where we have a reasonable expectation of finding matches to other signatures. In the approach here, we keep increasing the height $x$ at which the signature is taken until we find a section with a stable pattern. This process is shown in Figure \ref{fig:crosscuts2} at the example of bullet~1-1 from barrel 3, where `stability' is  defined as two aligned signatures from heights chosen 25$\mu m$ apart having a cross-correlation of at least 0.95. 
@@ -564,7 +579,7 @@ grid.arrange(lop[[1]], lop[[2]], lop[[3]],
 \caption{\label{fig:crosscuts2}Signatures for barrel 3, bullet 1-1 extracted from varying heights. Initially, the match between signatures taken at heights 25$\mu m$ apart is affected strongly by some break off at the bottom of the bullet. At a  level of $175\mu m$ the bullet's signature stabilizes. For this land, matches should not be attempted at lower heights.}
 \end{figure}
 
-### Varying smoothing factor
+## Varying smoothing factor
 
 As mentioned earlier, the algorithm for detecting peaks and valleys depends on the selection of a smoothing window, called the smoothing factor or span. A smoothing factor of $k$ means that the $k$ closest observations to $x_o$ are considered for a fit for $x_o$. Because surface measurements are recorded at an equidistant resolution (here, of 1.5625$\mu m$), we decided to only consider odd smoothing factors $2k + 1$, which means that the $k$ observations to the left and right of $x_o$ are considered for a local fit of $x_o$. For detecting and removing the grooves prior to fitting a loess regression we selected a smoothing factor  of 35, while for detecting the peaks/valleys of the loess residuals a smoothing factor of 25 seems more appropriate.
 
@@ -605,7 +620,7 @@ ggplot() + theme_bw() +
 \caption{\label{fig:varysmooth} Peak/valley detection at smoothing factors of 5, 25, and 45, respectively. Note that a smoothing factor of 5 yields enough noise that many very minimal overlapping peaks and valleys are detected, while a smoothing factor of 45 might over-smooth and cause the peaks/valleys to either end disappear or shift horizontally from their original position in the signature.}
 \end{figure}
 
-## Evaluation
+# Evaluation
 
 In order to get a better understanding of  how  the matching algorithm works in known matches and non-matches, we investigate its performance in a test scenario based on the James Hamby study.
 As a first step, we automatically assess the quality of each of the lands by  checking that we can identify a stable region on each land. For this, we compute the cross-correlation of signatures extracted from heights 25$\mu m$ apart. For a stable region, we require a minimum of 0.95 for the cross correlation. Four lands from different bullets are flagged as problematic in this respect. A visual inspection (see Figure \ref{fig:fourflags}) shows that each one of these lands has scratch marks across the surface, also known as `tank rash'.
@@ -614,19 +629,19 @@ As a first step, we automatically assess the quality of each of the lands by  ch
   \centering
 \begin{subfigure}[t]{.49\textwidth}\centering
 \caption{Barrel 6 Bullet 2-1}
-\includegraphics[width=\textwidth]{papers/bullets/images/br6-2-1-grey.png}
+\includegraphics[width=\textwidth]{images/br6-2-1-grey.png}
 \end{subfigure}
 \begin{subfigure}[t]{.49\textwidth}\centering
 \caption{Barrel 9 Bullet 2-4}
-\includegraphics[width=\textwidth]{papers/bullets/images/br9-2-4-grey.png}
+\includegraphics[width=\textwidth]{images/br9-2-4-grey.png}
 \end{subfigure}
 \begin{subfigure}[t]{.49\textwidth}\centering
 \caption{Unknown Bullet B-2}
-\includegraphics[width=\textwidth]{papers/bullets/images/b-2-grey.png}
+\includegraphics[width=\textwidth]{images/b-2-grey.png}
 \end{subfigure}
 \begin{subfigure}[t]{.49\textwidth}\centering
 \caption{Unknown Bullet Q-4}
-\includegraphics[width=\textwidth]{papers/bullets/images/q-4-grey.png}
+\includegraphics[width=\textwidth]{images/q-4-grey.png}
 \end{subfigure}
 \caption{\label{fig:fourflags}Images of the four lands that got flagged during the quality assessment. All of them show scratch marks (tank rash) across the striation marks from the barrel. They are excluded from the remainder of the analysis.}
 \end{figure}
@@ -987,7 +1002,7 @@ The variables with the most predictive power are cross-correlation and the overa
 
 Besides including results from known matches against known non-matches, we can increase the number of comparisons in the Hamby study to include all possible land-to-land comparisons. This effectively doubles the number of data points available. Comparisons not previously included in fitting the random forest can also be used as an additional source for assessing error rates.  Results for this and a more detailed discussion can be found in Supplement section \ref{supp:extended}.
 
-## Conclusion
+# Conclusion
 
 We have presented an algorithm which detects the most prominent but least relevant structure of a bullet from a firearms identification perspective, removes these features, and produces residuals which allow for the easy identification of markings. We have generalized this algorithm to align the residuals from two bullets to automatically determine whether they are matches. We created a random forest model using many of the features to provide a probabilistic assessment of the quality of a match, along with the most relevant features. Matching bullets is clearly not a single step, but rather a sequence of a number of data analysis tasks which each deserve attention. As there is no scientific standard in place at this point in time, our intent is to explain one approach to addressing these tasks, while documenting all steps and providing all code so other researchers and forensic scientists can reproduce and expand on our findings.
 
@@ -1003,14 +1018,14 @@ By suggesting an automated algorithm that first removes class characteristics, s
 
 For a fair assessment of the performance of an algorithm, we need transparency. Our matching  algorithm is open: the code is readily available in form of the R package x3prplus [@x3prplus], and the code to produce this paper is available at \url{http://www.github.com/erichare/imaging-paper}. To understand whether an automated approach along the lines of the one we propose can accurately identify sets of bullets with undistinguishable markings, it will be necessary to assemble a much larger database that includes a wide range of ammunition types, degrees of damage, gun makes, etc. We are unaware of the existence of any such database. In addition to serving as a realistic testbed for the performance of the automated matching algorithm, such a database would also permit testing the underlying, as of yet untested, assumptions of uniqueness and reproducibility of the markings left by a gun on bullets.
 
-## Acknowledgment
+# Acknowledgment
 
 Thanks to David Baldwin for pointing us to the NIST database and doing a Firearms 101 for us.
 Thanks to the men and women behind the software R [@R], and the authors of the R packages knitr [@knitr] and ggplot2 [@ggplot2].
 
-## Appendix
+# Appendix
 
-### Cylindrical Fit
+## Cylindrical Fit
 
 Figure \ref{fig:fixedX2} shows the  profile of surface measurements of bullet 1-5 at a fixed height. The smooth line on top is a circle, with estimated radius and center. The details of this fit are given below:
 
@@ -1180,7 +1195,7 @@ qplot(y, resid, data=subset(db2, x == 100), #colour=factor(x),
 \caption{Circular fit to the signature of each land of bullet 2, with signature from bullet 1-5 overlaid.\label{fig:circlefits} The signature of bullet 1-5 matches best with bullet 2-1.}
 \end{figure}
 
-### Assessing cross-correlation between signatures at multiple levels of height
+## Assessing cross-correlation between signatures at multiple levels of height
 
 Figure \ref{fig:crosscuts} shows a sequence of signatures for bullet 1-5 (barrel 1) that are taken at heights 50$\mu m$ apart, between 150$\mu m$  and 400$\mu m$. These are compared to the signature at a height of 100$\mu m$. Initially, this comparison constitutes an almost perfect match between the two signatures. However, the match quickly deteriorates with increasing distance between the heights at which signatures are extracted.  Only if signatures are from heights  within 150$\mu m$ do we get a good visual match even when we know that the same bullet surface is being used. 
 Given that we have to expect some variation in nominally the same height values due to (manual) alignments in microscopes, we should take height values into account in the automatic matching routine by evaluating matches at several heights. 
@@ -1248,7 +1263,7 @@ grid.arrange(lop[[1]], lop[[2]], lop[[3]], lop[[4]], lop[[5]], lop[[6]],
 \caption{\label{fig:crosscuts}Overview of the variations in the signatures at different heights. The signature extracted at $x = 100\mu m$ is compared to signatures at every 50$\mu m$. With every step away from the original height, the number of differences between the signatures increases; the number of maximum CMS decreases from initially 22 to  four or fewer at a height of $x = 300\mu m$ and above.}
 \end{figure}
 
-### Signature intensities
+## Signature intensities
 
 ```{r setup-signatures, echo=FALSE, message=FALSE}
 knowndatadir <- "images/Hamby (2009) Barrel/bullets"
@@ -1336,7 +1351,7 @@ qplot(x, sd, data=stats, geom="line", group=bullet, alpha=I(0.5)) + theme_bw() +
 Figure \ref{fig:sds} shows that the amount of standard deviation of a signature decreases on average for all bullet lands at larger heights.
 This makes standard deviation of a signature one measure to quantify the extent to which a signature is expressed. For identifying matches we should therefore use the lowest height to extract a bullet's signature once a stable surface region is detected. This is in accordance with current standard practice [@afte:1992].
 
-### Complete evaluation of the Hamby study
+## Complete evaluation of the Hamby study
 
 One way to expand the use of the James Hamby study is to not only match all of the unknown bullet lands against the known bullet lands, but to compare every land against every other land. This effectively doubles the number of comparisons from 10,384 pairwise comparisons of usable bullet lands to 21,115 $\left[= (118+88)\cdot 205/2\right]$ comparisons by adding another 10,731 bullet land comparisons made up of known-to-known and unknown-to-unkown comparisons. 
 
@@ -1492,7 +1507,7 @@ qplot(x=y, y=l30, data=subset(aligned, barrel > 5),
 \end{figure}
 \end{landscape}
 
-### Table of feature importance
+## Table of feature importance
 
 Two random forests were calculated for the Hamby study. For the first random forest only comparisons of bullet lands from known bullets and unknown bullets were used. The second random forest is based on a full comparison of every land with every other land, increasing the number of comparisons from originally 10,384 (10,212 known non-matches and 172 known matches) by another 10,931 comparisons (10,637 known non-matches and 94 known matches). Random forests allow an assessment of variable importance (also called feature importance) as the mean decrease in Gini index when including each variable. 
 Table \ref{tab:importance} shows the results for feature importance for both of these random forests. Importance 1 refers to the smaller subset, Importance 2 is the feature importance derived from the random forest based on all pairwise comparisons.

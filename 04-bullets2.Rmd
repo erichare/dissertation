@@ -1,0 +1,26 @@
+\chapter{A MODERN BULLET MATCHING APPLICATION}
+
+\begin{center}
+
+A paper to be submitted to the \textbf{Journal of Forensic Science}. \\
+Eric Hare, Heike Hofmann, Alicia Carriquiry
+
+\textbf{Abstract}
+
+\end{center}
+
+TBD
+
+\newpage
+
+# Background
+
+# Database Structure
+
+# Application Structure
+
+## Forensic Examiner
+
+## Forensic Scientist
+
+# Case Study: Feature Analysis
