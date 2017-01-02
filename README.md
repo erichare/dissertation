@@ -4,27 +4,12 @@ My dissertation for a PhD in Statistics (Co-Major in Computer Science) at Iowa S
 
 ## Title
 
-Enabling Scientists to Understand Their Data using Web-based Statistical Tools.
+Statistical Methods and Software Design Techniques for Bullet Land Matching
 
 ## Outline
 
-1. Automatic Matching of Bullet Lands
-2. Introducing Statistics with intRo (or bullets follow-up paper)
-3. A Web Framework for Rapid Deployment of Visual Inference Studies
+1. Designing Modular Software: A Case Study in Introductory Statistics
+2. Automatic Matching of Bullet Lands
+3. A Modern Bullet Matching Application
     
-## Lineup Notes
-
-Big Dream: Providing lineup service to the public
-
-Organize Framework for generating lineup experiments
-
-1. Picture Details -> Database (Link between stimuli and responses + demographics)
-2. Uploading pictures
-    a. Check feasibility of uploaded images, give warnings
-3. Sampling Schemes
-    a. Theoretical Framework: Interaction between randomization and stratification
-    b. Simulate in order to check theory
-    c. Provide Examples / Choices
-4. Provide P-Values based on sampling scheme
-
 ## TODO 

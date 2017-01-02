@@ -1,5 +1,5 @@
 ---
-title: "Statistical Methods and Computing Techniques for Bullet Matching"
+title: "Statistical Methods and Software Design Techniques for Bullet Land Matching"
 author: "Eric Hare"
 documentclass: isuthesis
 knit: "bookdown::render_book"
