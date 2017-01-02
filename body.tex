@@ -17,3 +17,6 @@
 %Optional thesis abstract
 \cleardoublepage \phantomsection
 \include{preface/abstract}
+
+\let\oldhypertarget\hypertarget
+\renewcommand{\hypertarget}[2]{\oldhypertarget{#1}{#2}~\\[0in]}
