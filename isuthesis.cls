@@ -584,7 +584,7 @@
      \def\@majortitle{Major: }\fi}
 \def\comajors#1#2{\@majornum=2 \signmajornum=2
    \@depmajmac{\@deptone}{\@depttwo}{#1}{#2}
-   \def\@majortitle{Co-majors: }}
+   \def\@majortitle{Co-majors:\\ }}
 
 \def\signmajor#1{\def\@signmajor{#1}}
 \signmajor{\ifnum\signmajornum=2 Co-major Professor \else 
@@ -600,7 +600,7 @@ For the Major Program\fi\fi}
 \def\minor#1{\def\@minor{\\Minor: #1}}
 \def\@minor{}
 
-\def\mprofs#1#2{\def\@mprofs{#1, Co-major Professor\\#2, Co-major Professor} 
+\def\mprofs#1#2{\def\@mprofs{#1, Major Professor\\#2, Co-Major Professor} 
 \signmajornum=2} 
 \def\@mprofs{}
 

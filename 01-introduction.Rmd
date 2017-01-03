@@ -69,11 +69,14 @@ To tie the pieces together, we need to apply the software development ideas form
 
 The first component is a database. Our database builds on top of the NIST Ballistics Research Database\footnote{https://tsapps.nist.gov/NRBTD}. NIST's database provides an open and transparent source of raw data files representing surface topologies of toolmarks. Our database allows the storage of **processed** versions of these toolmark surfaces, tracking the parameters necessary to reproduce the results. This allows for a quantitative assessment of each step of our bullet matching algorithm. The database is discussed at length in Chapter Three.
 
-The second component of our software system is a web front-end aimed at those who do not have R programming skills. The web front-end allows forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display includes a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \@ref(fig:bullets-app) displays a screenshot of the this component.
+The second component of our software system is a web front-end aimed at those who do not have R programming skills. The web front-end allows forensic examiners to upload bullet land images, examine the surface topologies, and perform each aspect of the algorithm in order to arrive at a probability of a match. The final display includes a results page in which all chosen parameters of the algorithm are provided so that a report on the results can be pretended and cross-checked by other researchers. Figure \ref{fig:bullets-app} displays a screenshot of the this component.
 
-```{r bullets-app, echo=FALSE, fig.cap='Prototype user interface for the bullet matching algorithm.', fig.pos='H'}
-knitr::include_graphics("images/bullets_app.png")
-```
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/bullets_app.png}
+\caption{Prototype user interface for the bullet matching algorithm.}
+\label{fig:bullets-app}
+\end{figure}
 
 Finally, the third component is a web-based backend designed for the further assessment and development of the algorithms itself. This is aimed at researchers and scientists who wish to iterate on the performance of the algorithm by continuing to assess its results in the context of the database, and the different processed versions of toolmark images available.
 

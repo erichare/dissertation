@@ -67,13 +67,19 @@ This allows for an objective and quantitative assessment of striae-based bullet 
 Throughout this paper, we work with images from the James Hamby Consecutively Rifled Ruger Barrel Study [@hamby:2009]. Ten consecutively rifled Ruger P-85 pistol barrels were obtained from the manufacturer and fired to produce 20 known test bullets and 15 unknown bullets for comparison. 
 3D topographical images of each bullet were obtained using a NanoFocus lens at 20x magnification and made publicly available on the NIST Ballistics Database Project\footnote{\url{http://www.nist.gov/forensics/ballisticsdb/hamby-consecutively-rifled-barrels.cfm}} in a format called x3p (XML 3-D Surface Profile). The x3p format conforms to the ISO5436-2 standard\footnote{\url{http://sourceforge.net/p/open-gps/mwiki/X3p/}}, implemented to provide a simple and standard conforming way to exchange 2D and 3D profile data. It was adopted by the OpenFMC (Open Forensic Metrology Consortium\footnote{\url{http://www.openfmc.org/}}), a group of academic, industry, and government firearm forensics researchers whose aim is to establish best practices for researchers using metrology in forensic science. An open-source package for working with x3p files has been written in R [@R] by Dr. Nicholas Petraco which we build upon in the development of our algorithm [@x3pr]. This package enables the direct reading and manipulation of x3p files.
 
-```{r sidex3p, echo=FALSE, fig.align='center', fig.cap='View of the data along the circumference of the bullet (circular segment of about 30 degrees).'}
-include_graphics("images/sidex3p.png")
-```
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/sidex3p.png}
+\caption{View of the data along the circumference of the bullet (circular segment of about 30 degrees).}
+\label{fig:sidex3p}
+\end{figure}
 
-```{r topx3p, echo=FALSE, fig.align='center', fig.cap='Frontal view of a bullet land (lower end of the view is the bottom of the bullet).'}
-include_graphics("images/topx3p.png")
-```
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/topx3p.png}
+\caption{Frontal view of a bullet land (lower end of the view is the bottom of the bullet).}
+\label{fig:topx3p}
+\end{figure}
 
 ```{r, echo=FALSE}
 typical_width <- read.csv("csvs/grooves.csv") %>%
@@ -980,7 +986,7 @@ qplot(data=predm, value, match, geom="jitter", colour=match, shape=match) + them
 Besides resulting in a probabilistic quantification of matches, random forests also provide an assessment of the importance of each of the features derived from the bullets' 3D topological surface measurements. Figure \ref{fig:importance} shows an overview of the importance of each variable measured as the mean decrease in the Gini index when the variable in question is included in a tree (for the exact values please refer to Supplement section \ref{supp:randomforest}). 
 
 \begin{figure}
-```{r echo=FALSE, fig.width=7, fig.height=2, out.width='.7\\textwidth'}
+```{r echo=FALSE, fig.width=7, fig.height=2, out.width='.7\\textwidth', fig.align='center'}
 imp <- data.frame(importance(rtrees))
 imp$Variable <- row.names(imp)
 imp$Variable[c(7,8)] <- c("#matches", "#non-matches")
@@ -1314,7 +1320,7 @@ if (!file.exists("csvs/crosscuts-sd.csv")) {
 Figure \ref{fig:overview} shows an overview of the signatures at different heights on a single bullet. 
 
 \begin{figure}[hbtp]
-```{r one-bulletland-sd, echo=FALSE, dependson='setup-signatures', fig.height=5, fig.width=8, out.width='0.7\\textwidth', warning=FALSE}
+```{r one-bulletland-sd, echo=FALSE, dependson='setup-signatures', fig.height=5, fig.width=8, out.width='0.7\\textwidth', warning=FALSE, fig.align='center'}
 k <- 1
 x <- as.character(ccs$path)[k]
 land <- read_x3p(x)

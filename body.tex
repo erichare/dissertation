@@ -17,6 +17,8 @@
 %Optional thesis abstract
 \cleardoublepage \phantomsection
 \include{preface/abstract}
+\newpage
+\pagenumbering{arabic}
 
 \let\oldhypertarget\hypertarget
-\renewcommand{\hypertarget}[2]{\oldhypertarget{#1}{#2}~\\[0in]}
+\renewcommand{\hypertarget}[2]{\oldhypertarget{#1}{#2}~\vspace{0in}}

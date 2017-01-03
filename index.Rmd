@@ -3,6 +3,7 @@ documentclass: isuthesis
 knit: "bookdown::render_book"
 output:
   bookdown::pdf_book:
+    template: my_template.tex
     toc: false
     keep_tex: yes
     includes:
@@ -10,9 +11,17 @@ output:
 bibliography: references.bib
 fontsize: 11pt
 header-includes:
+    - \usepackage{geometry}
     - \usepackage{subcaption}
     - \usepackage{pdflscape}
     - \usepackage{float}
+    - \usepackage{isutraditional}
+    - \alternate
+    - \usepackage{rotating}
+    - \usepackage[pdftex,hypertexnames=false,linktocpage=true]{hyperref}
+    - \hypersetup{colorlinks=true,linkcolor=blue,anchorcolor=blue,citecolor=blue,filecolor=blue,urlcolor=blue,bookmarksnumbered=true,pdfview=FitB}
+    - \usepackage{natbib}
+    - \bibliographystyle{apa}
 ---
 
 \newgeometry{letterpaper, left=1.25in, top=0.55in, right=1.02in, bottom=1in, includehead=true}
