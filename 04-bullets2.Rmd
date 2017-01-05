@@ -27,6 +27,15 @@ In this paper, we attempt to add a new layer of reproducibility to the algorithm
 
 # Database Structure
 
+Figure \ref{fig:database_schema} displays the database schema along with links between the relevant id columns.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/schema.png}
+\caption{A schematic of the database.}
+\label{fig:database_schema}
+\end{figure}
+
 # Application Structure
 
 ## Forensic Examiner
