@@ -17,7 +17,7 @@ TBD
 
 The need for advancements in terms of scientific objectivity and reproducibility of forensic methods is well known. Note, for example, the recent report by the President's Council of Advisors on Science on Technology (PCAST) [@pcast2016]. The report references a number of areas of common practice in the field in which subjectivity is far too common, including but not limited to fingerprint analysis, bitemark analysis and firearms analysis.
 
-Work has been done to address these concerns and add objectivity to these procedures. In the case of firearms analysis, the focus of this paper, some examples include @vorburger:2011, @thompson:2013, and @riva:2014. Our own work, "Automatic Matching of Bullet Lands", describes procedures used to produce an estimate of the probability of a match between two bullet lands. It does so by deriving a number of features, some from the literature and some original, and computing these features on pairs of reference bullets from the NIST Ballistics Toolmark Database. The algorithms used are published as open-source R code available in the package `x3prplus` [@x3prplus]. In spite of these steps towards transparency, however, the process of duplicated and assessing the performance of the algorithm in hopes of improving predictive accuracy was cumbersome in a number of ways:
+Work has been done to address these concerns and add objectivity to these procedures. In the case of firearms analysis, the focus of this paper, some examples include @vorburger:2011, @thompson:2013, and @riva:2014. Our own work, "Automatic Matching of Bullet Lands", describes procedures used to produce an estimate of the probability of a match between two bullet lands. It does so by deriving a number of features, some from the literature and some original, and computing these features on pairs of reference bullets from the NIST Ballistics Toolmark Research Database (NBTRD). The algorithms used are published as open-source R code available in the package `x3prplus` [@x3prplus]. In spite of these steps towards transparency, however, the process of duplicated and assessing the performance of the algorithm in hopes of improving predictive accuracy was cumbersome in a number of ways:
 
 1. Doing so requires specialized statistical software (specifically, R and associated R packages)
 2. Computing statistics on all pairs of bullet lands is a time consuming process even on high-powered machines (on the order of several days)
@@ -27,7 +27,7 @@ In this paper, we attempt to add a new layer of reproducibility to the algorithm
 
 # Database Structure
 
-Figure \ref{fig:database_schema} displays the database schema along with links between the relevant id columns.
+Figure \ref{fig:database_schema} displays the database schema along with links between the relevant id columns. This structure provides the necessary links between the raw input data, and the processed signatures used to compute features and ultimately provide matching probabilities between pairs of lands. This diagram will be explained in depth in this section.
 
 \begin{figure}[H]
 \centering
@@ -35,6 +35,83 @@ Figure \ref{fig:database_schema} displays the database schema along with links b
 \caption{A schematic of the database.}
 \label{fig:database_schema}
 \end{figure}
+
+## Data
+
+The data table is essentially a mirror of the bullets stored in the NBTRD. It currently includes a long-form version of the two Hamby bullet sets (Set 252 and Set 44) [@hamby:2009] and the Cary Persistence study [@cary]. A sample of 20 rows of this table can be seen in Table \ref{tab:data}. The land id column identifies the bullet land under consideration. The x coordinate is the location along the shorter axis, while the y coordinate is along the longer axis. The value column represents the height of the bullet at that particular location.
+
+```{r, echo=FALSE, message=FALSE, results='asis'}
+library(RMySQL)
+library(xtable)
+
+dbname <- "bullets"
+user <- "buser"
+password <- readLines("buser_pass.txt")
+host <- "50.81.214.252"
+
+con <- dbConnect(MySQL(), user = user, password = password,
+                 dbname = dbname, host = host)
+
+print(xtable(dbGetQuery(con, "SELECT * FROM data WHERE land_id = 65 AND value IS NOT NULL ORDER BY x,y LIMIT 20"), digits = c(0, 0, 0, 0, 2, 2), label = "tab:data", caption = "A sample of 20 rows of the data table. The land id column identifies the bullet land under consideration. The x coordinate is the location along the shorter axis, while the y coordinate is along the longer axis. The value column represents the height of the bullet at that particular location."), comment = FALSE)
+```
+
+In comparison to a regular x3p file, this data table is less space efficient. An x3p file uses a surface matrix of dimension $(x, y)$ where the value of each $(x_i, y_j)$ is the height of the bullet at $x = i$ and $y = j$. Our expanded version of the format turns each cell into a single row $x_i, y_j, z_{ij}$. Where $z_{ij}$ where $z_{ij}$ is the height of the bullet at $x = i$, $y = j$. Thus, for a bullet with 500 $x$ values and 1572 $y$ values (as in land id 65), an x3p file uses a matrix of size 786000, while we use a data frame of 786000 rows and 3 columns, storing $3x$ as much information. While certainly less space efficient, the format allows for easy querying of specific lands or specific profiles from the database.
+
+## Metadata
+
+As shown in Table \ref{tab:metadata}, the metadata table includes one row for each unique bullet land. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers). Note that this table includes parameters that are derived solely from the properties of the data itself. Hence, the previous data table in conjunction with metadata forms the information needed to generate x3p files. Conversely, x3p files can be used to regenerate the data contained in both these tables.
+
+```{r, echo=FALSE, results='asis'}
+result <- dbGetQuery(con, "SELECT * FROM metadata WHERE land_id >= 61 AND land_id <= 72")
+result$name <- gsub("images/Hamby \\(2009\\) Barrel/bullets/", "Hamby/", result$name)
+print(xtable(result, digits = c(0, 0, 0, 0, 0, 4, 4), label = "tab:metadata", caption = "A sample of 12 rows of the metadata table. The land id column identifies the bullet land under consideration. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers)"), comment = FALSE, include.rownames = FALSE)
+```
+
+## Metadata Derived
+
+Similarly to the metadata table, the metadata_derived table (Sampled in Table \ref{tab:metadata_derived}) includes one row per bullet land. The difference is that the columns of this table were derived by our algorithm rather than properties of the data. The run_id, which will be discussed in more depth later, indicates the algorithm run that yielded the following derived parameters.
+
+```{r, echo=FALSE, results='asis'}
+result <- dbGetQuery(con, "SELECT * FROM metadata_derived WHERE land_id >= 61 AND land_id <= 72")
+print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 0, 0), label = "tab:metadata_derived", caption = "A sample of 12 rows of the metadata\\_derived table. Once again, a land id identifies a particular bullet land. The run id, which will be discussed in more depth later, indicates the algorithm run that yielded the following derived parameters."), comment = FALSE, include.rownames = FALSE)
+```
+
+A number of derived parameters are given for a particular land and a particular run:
+
+1. **ideal_crosscut** - The location of the ideal cross section (or ideal x coordinate) at which to extract a profile, as given by Hare, Hofmann, Carriquiry (2017).
+2. **left_twist** - The calculated twist of the scan as determined by the left shoulder.
+3. **right_twist** - The calculated twist of the scan as determined by the right shoulder.
+4. **left_sample** - The number of samples used to compute the left twist.
+5. **right_sample** - The number of samples used to compute the right twist.
+
+## Profiles
+
+Table \ref{tab:profiles} displays 10 profiles from land id 65, using the first 20 x coordinate values. Profiles are defined by properties of the grooves or shoulders. Hence, given this information, we can post-process the data table to extract particular profiles. For instance, we can use profile_id 32448, which is the profile obtained by extracting at x = 100 for land_id 65. Using properties of the grooves as determined by our algorithm, we can extract the the profile with the shoulders and grooves removed.
+
+```{r, echo=FALSE, results='asis'}
+result <- dbGetQuery(con, "SELECT * FROM profiles WHERE land_id = 65")
+print(xtable(result[60:69,-(7:8)], digits = c(0, 0, 0, 0, 2, 2, 2), label = "tab:profiles", caption = "A sample of 20 rows of the profiles table. A profile id is uniquely identified by a land id, a run id, and an x value."), comment = FALSE, include.rownames = FALSE)
+```
+
+Figure \ref{fig:prof} displays the profile obtained by extracting land id 65 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.
+
+```{r prof, echo=FALSE, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The profile obtained by extracting land id 65 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.'}
+library(dplyr)
+library(ggplot2)
+
+myprof <- filter(result, profile_id == 32448)
+
+myq <- paste0("SELECT * FROM data WHERE land_id = ", myprof$land_id, " AND x = ", myprof$x)
+land65 <- dbGetQuery(con, myq)
+
+ggplot(data = land65, aes(x = y, y = value)) +
+    geom_line() +
+    geom_vline(xintercept = myprof$groove_left_pred, linetype = 2) +
+    geom_vline(xintercept = myprof$groove_right_pred, linetype = 2) +
+    theme_bw()
+```
+
+## Signatures
 
 # Application Structure
 
