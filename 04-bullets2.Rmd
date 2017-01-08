@@ -113,6 +113,16 @@ ggplot(data = land65, aes(x = y, y = value)) +
 
 ## Signatures
 
+The land signature represents the processed data that is ultimately used for matching. In our case, a land signature represents the smoothed and processed residuals obtained from fitting a Locally Weighted Scatterplot Smoothing Regression (LOESS) to the profiles from above. Figure \ref{fig:sigs} displays the signature obtained by processing the profile of land id 65 at x = 100. It can be seen that the signature represents an attempt at reducing a bullet land to the peaks and valleys that represent striations, by removing the global structure of the bullet that dominates the view of the profile.
+
+```{r sigs, echo=FALSE, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The signature obtained by processing the profile of land id 65 at x = 100.'}
+result <- dbGetQuery(con, "SELECT * FROM signatures WHERE profile_id = 32448")
+
+ggplot(data = result, aes(x = y, y = l30)) +
+    geom_line() +
+    theme_bw()
+```
+
 # Application Structure
 
 ## Forensic Examiner
