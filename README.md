@@ -4,7 +4,7 @@ My dissertation for a PhD in Statistics (Co-Major in Computer Science) at Iowa S
 
 ## Title
 
-Statistical Methods and Software Design Techniques for Bullet Land Matching
+Statistical Methods for Bullet Matching
 
 ## Outline
 
