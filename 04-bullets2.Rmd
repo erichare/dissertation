@@ -9,7 +9,7 @@ Eric Hare, Heike Hofmann, Alicia Carriquiry
 
 \end{center}
 
-TBD
+Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by describing a database structure which tracks every parameter used, and allows for the seamless replication of results by researchers, adding a layer of reproducibility to the bullet matching process. Finally, we describe a front-end web application which utilizes the algorithms and the database to allow bullet matching to be done more efficiently.
 
 \newpage
 
