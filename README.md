@@ -13,3 +13,6 @@ Statistical Methods for Bullet Matching
 3. A Modern Bullet Matching Application
     
 ## TODO 
+
+1. Study / barrel / bullet / land / path for the metadata table
+2. Use dplyr for database access
