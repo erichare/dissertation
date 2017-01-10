@@ -63,8 +63,7 @@ As shown in Table \ref{tab:metadata}, the metadata table includes one row for ea
 
 ```{r, echo=FALSE, results='asis'}
 result <- dbGetQuery(con, "SELECT * FROM metadata WHERE land_id >= 61 AND land_id <= 72")
-result$name <- gsub("images/Hamby \\(2009\\) Barrel/bullets/", "Hamby/", result$name)
-print(xtable(result, digits = c(0, 0, 0, 0, 0, 4, 4), label = "tab:metadata", caption = "A sample of 12 rows of the metadata table. The land id column identifies the bullet land under consideration. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers)"), comment = FALSE, include.rownames = FALSE)
+print(xtable(result, digits = c(0, 0, 0, 0, 0, 0, 0, 0, 4, 4), label = "tab:metadata", caption = "A sample of 12 rows of the metadata table. The land id column identifies the bullet land under consideration. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers)"), comment = FALSE, include.rownames = FALSE)
 ```
 
 ## Metadata Derived
