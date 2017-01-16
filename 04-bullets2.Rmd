@@ -17,11 +17,11 @@ Bullet matching is a process used to determine whether two bullets have been fir
 
 The need for advancements in terms of scientific objectivity and reproducibility of forensic methods is well known. Note, for example, the recent report by the President's Council of Advisors on Science on Technology (PCAST) [@pcast2016]. The report references a number of areas of common practice in the field in which subjectivity is far too common, including but not limited to fingerprint analysis, bitemark analysis and firearms analysis.
 
-Work has been done to address these concerns and add objectivity to these procedures. In the case of firearms analysis, the focus of this paper, some examples include @vorburger:2011, @thompson:2013, and @riva:2014. Our own work, "Automatic Matching of Bullet Lands", describes procedures used to produce an estimate of the probability of a match between two bullet lands. It does so by deriving a number of features, some from the literature and some original, and computing these features on pairs of reference bullets from the NIST Ballistics Toolmark Research Database (NBTRD). The algorithms used are published as open-source R code available in the package `x3prplus` [@x3prplus]. In spite of these steps towards transparency, however, the process of duplicated and assessing the performance of the algorithm in hopes of improving predictive accuracy was cumbersome in a number of ways:
+Work has been done to address these concerns and add objectivity to these procedures. In the case of firearms analysis, the focus of this paper, some examples include @vorburger:2011, @thompson:2013, and @riva:2014. Our own work, "Automatic Matching of Bullet Lands", describes procedures used to produce an estimate of the probability of a match between two bullet lands. It does so by deriving a number of features, some from the literature and some original, and computing these features on pairs of reference bullets from the NIST Ballistics Toolmark Research Database (NBTRD). The algorithms used are published as open-source R code available in the package `bulletr` [@bulletr]. In spite of these steps towards transparency, however, the process of duplicated and assessing the performance of the algorithm in hopes of improving predictive accuracy was cumbersome in a number of ways:
 
 1. Doing so requires specialized statistical software (specifically, R and associated R packages)
 2. Computing statistics on all pairs of bullet lands is a time consuming process even on high-powered machines (on the order of several days)
-3. Updates to our `x3prplus` package, or any package dependencies of `x3prplus`, may change the results such that our findings are not completely reproducible even if each step is correctly followed
+3. Updates to our `bulletr` package, or any package dependencies of `bulletr`, may change the results such that our findings are not completely reproducible even if each step is correctly followed
 
 In this paper, we add a new layer of reproducibility to the algorithms to allow for forensic scientists, statisticians, and other interested researchers to duplicate and iterate on the results in a seamless fashion. We do so by introducing a new database structure that supplements the NIST database by storing all necessary parameters and intermediate results needed to arrive at a matching probability between two bullet lands. We describe the structure from a technical perspective, and then describe the front-end and back-end application structure which utilizes the database to provide results to the researchers. Finally, we provide a case study analysis on features of bullet land pairs as an example of the capabiilities of this structure when it is leveraged.
 
@@ -39,9 +39,9 @@ Figure \ref{fig:database_schema} displays the database schema along with links b
 We can connect to the database using the `dplyr` package.
 
 ```{r, message=FALSE}
-library(RMySQL)
 library(xtable)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 
 dbname <- "bullets"
@@ -53,6 +53,8 @@ port <- 3306
 my_db <- src_mysql(dbname, host, port, user, password)
 ```
 
+The remainder of this section will walk through the most relevant database tables, and include reproducible R code for accessing, parsing, and displaying the data.
+
 ## Data
 
 The data table is essentially a mirror of the bullets stored in the NBTRD. It currently includes a long-form version of the two Hamby bullet sets (Set 252 and Set 44) [@hamby:2009] and the Cary Persistence study [@cary]. A sample of 20 rows of this table can be seen in Table \ref{tab:data}. The land id column identifies the bullet land under consideration. The x coordinate is the location along the shorter axis, while the y coordinate is along the longer axis. The value column represents the height of the bullet at that particular location.
@@ -61,7 +63,7 @@ The data table is essentially a mirror of the bullets stored in the NBTRD. It cu
 my_data <- tbl(my_db, "data")
 
 result <- my_data %>% 
-    filter(land_id == 65, !is.na(value)) %>%
+    filter(land_id == 39, !is.na(value)) %>%
     arrange(x, y) %>%
     head(n = 20) %>%
     as.data.frame
@@ -71,7 +73,7 @@ result <- my_data %>%
 print(xtable(result, digits = c(0, 0, 0, 0, 2, 2), label = "tab:data", caption = "A sample of 20 rows of the data table. The land id column identifies the bullet land under consideration. The x coordinate is the location along the shorter axis, while the y coordinate is along the longer axis. The value column represents the height of the bullet at that particular location."), comment = FALSE)
 ```
 
-In comparison to a regular x3p file, this data table is less space efficient. An x3p file uses a surface matrix of dimension $(x, y)$ where the value of each $(x_i, y_j)$ is the height of the bullet at $x = i$ and $y = j$. Our expanded version of the format turns each cell into a single row $x_i, y_j, z_{ij}$. Where $z_{ij}$ where $z_{ij}$ is the height of the bullet at $x = i$, $y = j$. Thus, for a bullet with 500 $x$ values and 1572 $y$ values (as in land id 65), an x3p file uses a matrix of size 786000, while we use a data frame of 786000 rows and 3 columns, storing $3x$ as much information. While certainly less space efficient, the format allows for easy querying of specific lands or specific profiles from the database.
+In comparison to a regular x3p file, this data table is less space efficient. An x3p file uses a surface matrix of dimension $(x, y)$ where the value of each $(x_i, y_j)$ is the height of the bullet at $x = i$ and $y = j$. Our expanded version of the format turns each cell into a single row $x_i, y_j, z_{ij}$. Where $z_{ij}$ where $z_{ij}$ is the height of the bullet at $x = i$, $y = j$. Thus, for a bullet with 500 $x$ values and 1572 $y$ values (as in land id 39), an x3p file uses a matrix of size 786000, while we use a data frame of 786000 rows and 3 columns, storing $3x$ as much information. While certainly less space efficient, the format allows for easy querying of specific lands or specific profiles from the database.
 
 ## Metadata
 
@@ -115,13 +117,13 @@ A number of derived parameters are given for a particular land and a particular 
 
 ## Profiles
 
-Table \ref{tab:profiles} displays 10 profiles from land id 65, using the first 20 x coordinate values. Profiles are defined by properties of the grooves or shoulders. Hence, given this information, we can post-process the data table to extract particular profiles. For instance, we can use profile_id 32448, which is the profile obtained by extracting at x = 100 for land_id 65. Using properties of the grooves as determined by our algorithm, we can extract the the profile with the shoulders and grooves removed.
+Table \ref{tab:profiles} displays 10 profiles from land id 39, using the first 20 x coordinate values. Profiles are defined by properties of the grooves or shoulders. Hence, given this information, we can post-process the data table to extract particular profiles. For instance, we can use profile_id 32448, which is the profile obtained by extracting at x = 100 for land_id 39. Using properties of the grooves as determined by our algorithm, we can extract the the profile with the shoulders and grooves removed.
 
 ```{r}
 my_profiles <- tbl(my_db, "profiles")
 
 result <- my_profiles %>% 
-    filter(land_id == 65, x > 92, x < 107) %>%
+    filter(land_id == 39, x > 92, x < 107) %>%
     select(-groove_left_pred, -groove_right_pred) %>%
     as.data.frame
 ```
@@ -130,16 +132,16 @@ result <- my_profiles %>%
 print(xtable(result, digits = c(0, 0, 0, 0, 2, 2, 2), label = "tab:profiles", caption = "A sample of 10 rows of the profiles table. A profile id is uniquely identified by a land id, a run id, and an x value."), comment = FALSE, include.rownames = FALSE)
 ```
 
-Figure \ref{fig:prof} displays the profile obtained by extracting land id 65 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.
+Figure \ref{fig:prof} displays the profile obtained by extracting land id 39 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.
 
-```{r prof, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The profile obtained by extracting land id 65 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.'}
-myprof <- filter(result, profile_id == 32448)
+```{r prof, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The profile obtained by extracting land id 39 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.'}
+myprof <- filter(result, x == 100)
 
-land65 <- my_data %>% 
-    filter(land_id == 65, x == 100) %>%
+land39 <- my_data %>% 
+    filter(land_id == 39, x == 100) %>%
     as.data.frame
 
-ggplot(data = land65, aes(x = y, y = value)) +
+ggplot(data = land39, aes(x = y, y = value)) +
     geom_line() +
     geom_vline(xintercept = myprof$groove_left, linetype = 2) +
     geom_vline(xintercept = myprof$groove_right, linetype = 2) +
@@ -148,18 +150,47 @@ ggplot(data = land65, aes(x = y, y = value)) +
 
 ## Signatures
 
-The land signature represents the processed data that is ultimately used for matching. In our case, a land signature represents the smoothed and processed residuals obtained from fitting a Locally Weighted Scatterplot Smoothing Regression (LOESS) to the profiles from above. Figure \ref{fig:sigs} displays the signature obtained by processing the profile of land id 65 at x = 100. It can be seen that the signature represents an attempt at reducing a bullet land to the peaks and valleys that represent striations, by removing the global structure of the bullet that dominates the view of the profile.
+The land signature represents the processed data that is ultimately used for matching. In our case, a land signature represents the smoothed and processed residuals obtained from fitting a Locally Weighted Scatterplot Smoothing Regression (LOESS) to the profiles from above. Figure \ref{fig:sigs} displays the signature obtained by processing the profile of land id 39 at x = 100. It can be seen that the signature represents an attempt at reducing a bullet land to the peaks and valleys that represent striations, by removing the global structure of the bullet that dominates the view of the profile.
 
-```{r sigs, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The signature obtained by processing the profile of land id 65 at x = 100.'}
+```{r sigs, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The signature obtained by processing the profile of land id 39 at x = 100.'}
 my_signatures <- tbl(my_db, "signatures")
 
 result <- my_signatures %>% 
-    filter(profile_id == 32448) %>%
+    filter(profile_id == myprof$profile_id) %>%
     as.data.frame
 
 ggplot(data = result, aes(x = y, y = l30)) +
     geom_line() +
     theme_bw()
+```
+
+## CCF
+
+The CCF table contains features computed on cross-comparisons between different signatures. The name is a bit of a misnomer; the ccf, or cross-correlation function, is only one of the features.  Table \ref{tab:ccf} displays the features given by this table for a comparison of land id 39, from above, with its match, land id 47.
+
+```{r}
+my_ccf <- tbl(my_db, "ccf")
+
+metadata2 <- my_metadata_derived %>%
+    filter(land_id == 47) %>%
+    as.data.frame
+
+myprof2 <- my_profiles %>% 
+    filter(land_id == 47, x == metadata2$ideal_crosscut) %>%
+    select(-groove_left_pred, -groove_right_pred) %>%
+    as.data.frame
+
+result <- my_ccf %>% 
+    filter(profile1_id == myprof$profile_id, profile2_id == myprof2$profile_id) %>%
+    as.data.frame %>%
+    select(-compare_id, -profile1_id, -profile2_id) %>%
+    gather(key = Feature, value = Value) %>%
+    mutate(Value = round(Value, digits = 4)) %>%
+    as.data.frame
+```
+
+```{r, echo=FALSE, results='asis'}
+print(xtable(result, digits = c(0, 4, 4), label = "tab:ccf", caption = "The derived features, given by the ccf table, for a comparison of land id 39 and land id 47."), comment = FALSE, include.rownames = FALSE)
 ```
 
 # Application Structure
