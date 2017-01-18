@@ -40,6 +40,7 @@ We can connect to the database using the `dplyr` package.
 
 ```{r, message=FALSE}
 library(xtable)
+library(RMySQL)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
