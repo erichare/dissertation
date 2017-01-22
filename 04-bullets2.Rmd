@@ -205,9 +205,53 @@ print(xtable(result, digits = c(0, 4, 4), label = "tab:ccf", caption = "The deri
 ```{r}
 my_matches <- tbl(my_db, "matches")
 
-result <- my_ccf %>% 
-    left_join(select(my_profiles, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
-    left_join(select(my_profiles, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
-    left_join(my_matches, by = c("land1_id" = "land1_id", "land2_id" = "land2_id")) %>%
-    collect()
+result1 <- my_ccf %>%
+    collect(n = Inf)
+result2 <- my_profiles %>%
+    collect(n = Inf)
+result3 <- my_matches %>%
+    collect(n = Inf)
+
+result <- result1 %>%
+    left_join(select(result2, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
+    left_join(select(result2, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
+    left_join(result3, by = c("land1_id" = "land1_id", "land2_id" = "land2_id"))
+
+# result <- my_ccf %>% 
+#     left_join(select(my_profiles, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
+#     left_join(select(my_profiles, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
+#     left_join(my_matches, by = c("land1_id" = "land1_id", "land2_id" = "land2_id")) %>%
+#     collect(n = Inf)
+```
+
+```{r}
+metdat <- collect(my_metadata)
+result %>%
+    filter(match == 0) %>%
+    arrange(desc(matches)) %>%
+    head %>%
+    left_join(select(metdat, land1_id = land_id, study1 = study, barrel1 = barrel, bullet1 = bullet, land1 = land), by = c("land1_id" = "land1_id")) %>%
+    left_join(select(metdat, land2_id = land_id, study2 = study, barrel2 = barrel, bullet2 = bullet, land2 = land), by = c("land2_id" = "land2_id"))
+```
+
+```{r}
+mysigs <- my_signatures %>% 
+    filter(profile_id %in% c(127549, 153421)) %>%
+    as.data.frame %>%
+    mutate(profile_id = factor(profile_id))
+
+ggplot(data = mysigs, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+```
+
+```{r, echo=FALSE, results="hide"}
+includes <- setdiff(names(result), c("id", "compare_id", "profile1_id", "profile2_id", "signature_length", "land1_id", "land2_id"))
+
+library(randomForest)
+
+rtrees <- randomForest(factor(match) ~ ., data = result[,includes], ntree = 300)
+result$forest <- predict(rtrees, type = "prob")[,2]
+imp <- data.frame(importance(rtrees))
+xtabs(~(forest > 0.5) + match, data = result)
 ```
