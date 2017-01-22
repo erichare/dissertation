@@ -201,3 +201,13 @@ print(xtable(result, digits = c(0, 4, 4), label = "tab:ccf", caption = "The deri
 ## Forensic Scientist
 
 # Case Study: Feature Analysis
+
+```{r}
+my_matches <- tbl(my_db, "matches")
+
+result <- my_ccf %>% 
+    left_join(select(my_profiles, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
+    left_join(select(my_profiles, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
+    left_join(my_matches, by = c("land1_id" = "land1_id", "land2_id" = "land2_id")) %>%
+    collect()
+```
