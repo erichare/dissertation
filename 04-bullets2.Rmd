@@ -217,7 +217,7 @@ result <- result1 %>%
     left_join(select(result2, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
     left_join(result3, by = c("land1_id" = "land1_id", "land2_id" = "land2_id"))
 
-# result <- my_ccf %>% 
+# result <- my_ccf %>%
 #     left_join(select(my_profiles, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
 #     left_join(select(my_profiles, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
 #     left_join(my_matches, by = c("land1_id" = "land1_id", "land2_id" = "land2_id")) %>%
@@ -229,14 +229,13 @@ metdat <- collect(my_metadata)
 result %>%
     filter(match == 0) %>%
     arrange(desc(matches)) %>%
-    head %>%
     left_join(select(metdat, land1_id = land_id, study1 = study, barrel1 = barrel, bullet1 = bullet, land1 = land), by = c("land1_id" = "land1_id")) %>%
     left_join(select(metdat, land2_id = land_id, study2 = study, barrel2 = barrel, bullet2 = bullet, land2 = land), by = c("land2_id" = "land2_id"))
 ```
 
 ```{r}
 mysigs <- my_signatures %>% 
-    filter(profile_id %in% c(127549, 153421)) %>%
+    filter(profile_id %in% c(74306, 172698)) %>%
     as.data.frame %>%
     mutate(profile_id = factor(profile_id))
 
