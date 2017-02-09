@@ -48,7 +48,7 @@ library(ggplot2)
 dbname <- "bullets"
 user <- "buser"
 password <- readLines("buser_pass.txt")
-host <- "50.81.214.252"
+host <- "10.25.122.176"
 port <- 3306
 
 my_db <- src_mysql(dbname, host, port, user, password)
