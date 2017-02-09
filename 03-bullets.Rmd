@@ -107,7 +107,7 @@ A procedure for bullet matching using the BulletTrax3D system is described in @r
 
 Modern automated techniques using 3D images have also been proposed by e.g. @riva:2014. However, the authors focused on cartridge cases and not bullets. This might seem like a trivial distinction, but it has implications for the development of the algorithm. The algorithm performs alignment of striae by rotation of the XY plane, which is not generalizable to bullets in which the XY plane is not flat. 
 
-Other work on 3D images has been described by @petraco:2012, who also focus on cartridge cases, as well as screwdriver striation patterns, and by others [e.g., @chu:2011, @chu:2013], vorburger:2011}.
+Other work on 3D images has been described by @petraco:2012, who also focus on cartridge cases, as well as screwdriver striation patterns, and by others [e.g., @chu:2011, @chu:2010, @vorburger:2011}.
 
 # Bullet signatures
 
