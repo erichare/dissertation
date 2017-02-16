@@ -63,6 +63,7 @@ The data table is essentially a mirror of the bullets stored in the NBTRD. It cu
 ```{r}
 my_data <- tbl(my_db, "data")
 
+# Get Hamby Barrel 1 Bullet 1 Land 3
 result <- my_data %>% 
     filter(land_id == 39, !is.na(value)) %>%
     arrange(x, y) %>%

@@ -1,0 +1,247 @@
+---
+title: "Bullet Analysis using"
+author: Eric Hare
+ratio: 4x3
+output:
+  rmdshower::shower_presentation:
+    self_contained: false
+    katex: true
+    theme: ribbon
+---
+
+# Background
+
+## Bullet Matching
+
+* Used to determine whether two guns fired from the same barrel
+* Rifling of gun barrels imprint striation markings on bullets
+* These striations are "unique" to each barrel, even for the same manufacturer
+
+![](images/striations.jpg)
+
+## Statistically Problematic!
+
+While used with some success, the procedure also has come under fire in recent years:
+
+* No error rates
+* No statistical thresholds for matching
+* It has never been proven that barrels have unique marking patterns
+
+NAS report (2009), PCAST report (2016) came down especially hard on the procedure.
+
+## Some Terminology
+
+* Land Impression
+* Groove Impression
+* Shoulders
+
+![](images/bullet.jpg)
+
+# Our Work
+
+## Algorithm
+
+1. Extract an ideal cross-section of a bullet land
+2. Detect and remove shoulders + grooves (we now have a **profile**)
+3. Fit a loess regression to the profile
+4. Extract the residuals of this regression (we now have a **signature**)
+5. Align two bullet land signatures 
+6. Compute a set of features
+7. Use a random forest to predict the probability they were fired from a single gun barrel
+
+## Computational Complexity
+
+So far, we're essentially only working with 35 bullets from a single controlled study. However, with 6 lands per bullets, we have a total of 210 lands, which means ${210 \choose 2} = 21945$ cross comparisons total. 
+
+Suppose we have a slightly better but still unrealistically small database of 350 bullets. ${2100 \choose 2} = 2203950$ cross comparisons and we are quickly running into computational issues.
+
+![](images/bullet12.jpg)
+
+# Databases
+
+## Why use a database?
+
+Databases dont solve all these issues, but they solve some important ones:
+
+1. **Memory** - We don't need to store all the objects in memory, but instead can access them on the fly as needed.
+2. **Concurrent Access** - Multiple users can access the database simultaneously without (much of) a performance hit
+3. **Faster** to query a database than parse a data frame
+4. **dplyr** natively supports databases (this is what we'll talk about today...)
+
+## Accessing a MySQL Database
+
+```{r, message=FALSE}
+# install.packages(c("tidyverse", "devtools", "RMySQL"))
+# devtools::install_github("erichare/bulletr")
+library(RMySQL)
+library(tidyverse)
+library(bulletr)
+
+dbname <- "bullets"
+user <- "buser"
+password <- "mFGy7P^BTWxnDW"
+host <- "50.81.214.252"
+port <- 3306
+
+my_db <- src_mysql(dbname, host, port, user, password)
+```
+
+## Getting a Bullet Land
+
+```{r}
+my_data <- tbl(my_db, "data")
+
+# Get Hamby Barrel 1 Bullet 1 Land 3
+br113 <- my_data %>% 
+    filter(land_id == 39) %>%
+    arrange(x, y) %>%
+    collect(n = Inf)
+br113_mat <- unfortify_x3p(br113)
+
+# plot_3d_land(bullet = br113_mat)
+```
+
+## Getting Bullet Metadata
+
+```{r}
+my_metadata <- tbl(my_db, "metadata")
+my_metadata_derived <- tbl(my_db, "metadata_derived")
+
+br113_metadata <- my_metadata %>% 
+    left_join(my_metadata_derived, by = c("land_id" = "land_id")) %>%
+    filter(land_id == 39) %>%
+    collect() %>%
+    glimpse()
+
+br113_metadata
+```
+
+## Get a Profile
+
+```{r}
+my_profiles <- tbl(my_db, "profiles")
+
+br113_profile_info <- my_profiles %>% 
+    filter(land_id == 39, x == br113_metadata$ideal_crosscut[1]) %>%
+    select(-groove_left_pred, -groove_right_pred) %>%
+    collect() %>%
+    glimpse()
+```
+
+## Get a Profile (Continued)
+
+```{r}
+br113_profile <- my_data %>% 
+    filter(land_id == 39, x == br113_metadata$ideal_crosscut[1]) %>%
+    collect() %>%
+    glimpse()
+```
+
+## Visualize the Profile
+
+```{r}
+ggplot(data = br113_profile, aes(x = y, y = value)) +
+    geom_line() +
+    geom_vline(xintercept = br113_profile_info$groove_left[1], linetype = 2) +
+    geom_vline(xintercept = br113_profile_info$groove_right[1], linetype = 2) +
+    theme_bw()
+```
+
+## Get a Signature
+
+```{r}
+my_signatures <- tbl(my_db, "signatures")
+
+br113_signature <- my_signatures %>% 
+    filter(profile_id == br113_profile_info$profile_id, run_id == 1) %>%
+    collect() %>%
+    glimpse()
+```
+
+## Visualize a Signature
+
+```{r, warning=FALSE}
+ggplot(data = br113_signature, aes(x = y, y = l30)) +
+    geom_line() +
+    theme_bw()
+```
+
+## YOUR TURN
+
+Overall Goal: Get the signature for land id 47. To do so, you will need to roughly follow what we did step by step for land id 39:
+
+1. Get the raw data
+2. Extract the ideal profile
+3. Extract the signature associated with the ideal profile
+4. Plot the signature (if you did it right, it should look very similar to the signature for land id 39... they are matches!)
+
+## YOUR TURN SOLUTION
+
+```{r}
+br125 <- my_data %>% 
+    filter(land_id == 47) %>%
+    arrange(x, y) %>%
+    collect(n = Inf)
+
+br125_metadata <- my_metadata %>% 
+    left_join(my_metadata_derived, by = c("land_id" = "land_id")) %>%
+    filter(land_id == 47) %>%
+    collect()
+
+br125_profile_info <- my_profiles %>% 
+    filter(land_id == 47, x == br125_metadata$ideal_crosscut[1]) %>%
+    select(-groove_left_pred, -groove_right_pred) %>%
+    collect()
+```
+
+## YOUR TURN SOLUTION CONTINUED
+
+```{r}
+br125_profile <- my_data %>% 
+    filter(land_id == 47, x == br125_metadata$ideal_crosscut[1]) %>%
+    collect()
+
+br125_signature <- my_signatures %>% 
+    filter(profile_id == br125_profile_info$profile_id, run_id == 1) %>%
+    collect()
+```
+
+## Finally, the plot
+
+```{r, warning=FALSE}
+ggplot(data = br125_signature, aes(x = y, y = l30)) +
+    geom_line() +
+    theme_bw()
+```
+
+## Feature Extraction
+
+After aligning the two signatures, features are extracted from each land-to-land comparison:
+
+* *CCF*: Function of the optimum shift distance measuring the correlation between two profiles (Vorburger, 2011)
+* *CMS*: Striated markings that line up exactly with one another without a break or dissimilarity in between them (Similarly, CNMS) (Biasotti 1959)
+* *Matches*: The number of matches total (Similarly, Non-Matches)
+* *D*: The euclidean vertical distance between surface measurements of aligned signatures. (A measure of the Total Variation (Clarkson, 1933))
+* *S*: The sum $S$ of average absolute heights of matched extrema
+
+## Getting the Features
+
+```{r}
+my_ccf <- tbl(my_db, "ccf")
+
+br113125_features <- my_ccf %>% 
+    filter(profile1_id == br113_profile_info$profile_id, profile2_id == br125_profile_info$profile_id) %>%
+    collect() %>%
+    glimpse()
+```
+
+## Predicted Probability
+
+```{r, message=FALSE, warning=FALSE}
+# download.file("http://50.81.214.252/rtrees.RData", destfile = "rtrees.RData")
+library(randomForest)
+load("rtrees.RData")
+predict(rtrees, newdata = br113125_features, type = "prob")
+```
+
+# Thank You!
