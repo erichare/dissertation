@@ -1,5 +1,5 @@
 ---
-title: "Bullet Analysis using"
+title: "Bullet Analysis Using Databases/dplyr"
 author: Eric Hare
 ratio: 4x3
 output:
@@ -8,6 +8,10 @@ output:
     katex: true
     theme: ribbon
 ---
+
+# Bullet Analysis Using Databases/dplyr
+
+Eric Hare
 
 # Background
 
