@@ -38,12 +38,13 @@ Figure \ref{fig:database_schema} displays the database schema along with links b
 
 We can connect to the database using the `dplyr` package.
 
-```{r, message=FALSE}
+```{r, message=FALSE, cache=FALSE}
 library(xtable)
 library(RMySQL)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(randomForest)
 
 dbname <- "bullets"
 user <- "buser"
@@ -158,7 +159,7 @@ The land signature represents the processed data that is ultimately used for mat
 my_signatures <- tbl(my_db, "signatures")
 
 result <- my_signatures %>% 
-    filter(profile_id == myprof$profile_id) %>%
+    filter(profile_id == myprof$profile_id, run_id == 1) %>%
     as.data.frame
 
 ggplot(data = result, aes(x = y, y = l30)) +
@@ -183,7 +184,9 @@ myprof2 <- my_profiles %>%
     as.data.frame
 
 result <- my_ccf %>% 
-    filter(profile1_id == myprof$profile_id, profile2_id == myprof2$profile_id) %>%
+    filter(profile1_id == myprof$profile_id, 
+           profile2_id == myprof2$profile_id, 
+           compare_id == 3) %>%
     as.data.frame %>%
     select(-compare_id, -profile1_id, -profile2_id) %>%
     gather(key = Feature, value = Value) %>%
@@ -195,63 +198,134 @@ result <- my_ccf %>%
 print(xtable(result, digits = c(0, 4, 4), label = "tab:ccf", caption = "The derived features, given by the ccf table, for a comparison of land id 39 and land id 47."), comment = FALSE, include.rownames = FALSE)
 ```
 
-# Application Structure
-
-## Forensic Examiner
-
-## Forensic Scientist
-
 # Case Study: Feature Analysis
 
-```{r}
-my_matches <- tbl(my_db, "matches")
+With the database structure defined, we turn our attention to using the database to perform a feature analysis using the bullets provided in the NBTRD. The modular structure of the database allows us to extract pre-derived features without performing the intermediate computations, which in turn allows for easier in depth exploration.
 
-result1 <- my_ccf %>%
-    collect(n = Inf)
-result2 <- my_profiles %>%
-    collect(n = Inf)
-result3 <- my_matches %>%
-    collect(n = Inf)
+To start, we introduce each feature provided in the CCF database table. Table \ref{tab:ccf1} provides the first eight columns of the CCF table, and Table \ref{tab:ccf2} provides the remaining seven columns.
 
-result <- result1 %>%
-    left_join(select(result2, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
-    left_join(select(result2, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
-    left_join(result3, by = c("land1_id" = "land1_id", "land2_id" = "land2_id"))
+```{r, echo=FALSE, results='asis'}
+result <- my_ccf %>%
+    filter(compare_id == 3) %>%
+    head %>%
+    collect %>%
+    select(1:8) %>%
+    as.data.frame
 
-# result <- my_ccf %>%
-#     left_join(select(my_profiles, profile1_id = profile_id, land1_id = land_id), by = c("profile1_id" = "profile1_id")) %>%
-#     left_join(select(my_profiles, profile2_id = profile_id, land2_id = land_id), by = c("profile2_id" = "profile2_id")) %>%
-#     left_join(my_matches, by = c("land1_id" = "land1_id", "land2_id" = "land2_id")) %>%
-#     collect(n = Inf)
+print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", caption = "A sample of six land-to-land comparisons, and derived features for these comparisons."), comment = FALSE, include.rownames = FALSE)
 ```
 
-```{r}
-metdat <- collect(my_metadata)
-result %>%
-    filter(match == 0) %>%
-    arrange(desc(matches)) %>%
-    left_join(select(metdat, land1_id = land_id, study1 = study, barrel1 = barrel, bullet1 = bullet, land1 = land), by = c("land1_id" = "land1_id")) %>%
-    left_join(select(metdat, land2_id = land_id, study2 = study, barrel2 = barrel, bullet2 = bullet, land2 = land), by = c("land2_id" = "land2_id"))
+```{r, echo=FALSE, results='asis'}
+result2 <- my_ccf %>%
+    filter(compare_id == 3) %>%
+    head %>%
+    collect %>%
+    select(9:ncol(.)) %>%
+    as.data.frame
+
+print(xtable(result2, digits = c(4, 4, 4, 4, 4, 4, 4, 4), label = "tab:ccf2", caption = "The remaining derived features for the previous six land-to-land comparisons."), comment = FALSE, include.rownames = FALSE)
 ```
 
-```{r}
-mysigs <- my_signatures %>% 
-    filter(profile_id %in% c(74306, 172698)) %>%
-    as.data.frame %>%
-    mutate(profile_id = factor(profile_id))
+The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particular cross-comparison between two profiles, with the given `compare_id` parameters. The remaining columns are the relevant features for the comparison. The definitions of the features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
 
-ggplot(data = mysigs, aes(x = y, y = l30, colour = profile_id)) +
-    geom_line() +
+- *ccf* (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The Cross-Correlation function is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature.
+- *double_cor* (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures. This attempts to model the roughness of the surface after removing the waviness.
+- *lag* (millimeters) Is the optimal lag for the ccf value.
+- *D* is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2$
+- *sd_D* provides the standard deviation of the values of *D* from above.
+- *signature_length* (millimeters) is the overall length of the smallest of the two aligned signatures.
+- *overlap* (%) provides the percentage of the two signatures that overlap after the alignment stage.
+- *matches* (millimeters) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- *mismatches* (millimeters) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- *cms* (millimeters) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- *non_cms* (millimeters) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- *sumpeaks* (millimeters) is the the sum of the average heights of matched striae.
+
+Using these features the randomForest [@randomForest] package, we can train a model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary.
+
+```{r, cache=FALSE}
+con <- dbConnect(MySQL(), user = user, password = password,
+                 dbname = dbname, host = host)
+
+all_bullets_metadata <- dbReadTable(con, "metadata")
+my_matches <- dbReadTable(con, "matches")
+profiles <- dbReadTable(con, "profiles")
+ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == max(compare_id))
+
+CCFs_withlands <- ccf %>%
+    left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%
+    left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile2_id" = "profile_id")) %>%
+    left_join(my_matches, by = c("land_id.x" = "land1_id", "land_id.y" = "land2_id")) %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.x" = "land_id")) %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
+    mutate(match = as.logical(match)) 
+```
+
+With this data, we can now train the forest. We split the data into an 80% training, 20% testing framework to assess its out of sample performance.
+
+```{r}
+set.seed(20170222)
+CCFs_train <- sample_frac(CCFs_withlands, size = .8)
+CCFs_test = setdiff(CCFs_withlands, CCFs_train)
+
+includes <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id",
+                                         "study.x", "study.y", "barrel.x", "barrel.y",
+                                         "bullet.x", "bullet.y", "land.x", "land.y",
+                                         "land_id.x", "land_id.y"))
+
+rtrees <- randomForest(factor(match) ~ ., data = CCFs_train[,includes], ntree = 300)
+CCFs_test$forest <- predict(rtrees, newdata = CCFs_test, type = "prob")[,2]
+imp <- data.frame(importance(rtrees))
+xtabs(~(forest > 0.5) + match, data = CCFs_test)
+```
+
+The confusion matrix suggests that false negatives are a serious problem. In other words, our algorithm is a bit too conservative in predicting a match when in fact the bullets were fired from the same gun barrel. We can break down the confusion matrix depending on the study that each of the two lands originated from.
+
+```{r}
+xtabs(~(forest > 0.5) + match + study.x + study.y, data = CCFs_test)
+```
+
+What we find is that both the rate and the raw number of false negatives is being artificially inflated by comparisons between lands from the Cary Persistence study. We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study.
+
+```{r}
+CCFs_train$study <- factor(paste(CCFs_train$study.x, CCFs_train$study.y, sep = "_"))
+CCFs_test$study <- factor(paste(CCFs_test$study.x, CCFs_test$study.y, sep = "_"))
+
+includes_study <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id",
+                                         "barrel.x", "barrel.y", "match",
+                                         "bullet.x", "bullet.y", "land.x", "land.y",
+                                         "land_id.x", "land_id.y", "study.x", "study.y"))
+
+rtrees_study <- randomForest(study ~ ., data = CCFs_train[,includes_study], ntree = 300)
+CCFs_test$study_forest <- predict(rtrees_study, newdata = CCFs_test)
+mytbl <- xtabs(~study_forest + study, data = CCFs_test)
+mytbl / colSums(mytbl)
+```
+
+Figures \ref{fig:ccfstudy} and \ref{fig:matchstudy} give the distribution of the CCF and the number of matches, respectively, colored by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons.
+
+```{r ccfstudy, message=FALSE, fig.cap="Distribution of the CCF, colored by match, for different study to study comparisons of lands."}
+ggplot(CCFs_train, aes(x = ccf, fill = match)) +
+    geom_histogram(bins = 50, alpha = I(0.8)) +
+    facet_wrap(~study) +
+    theme_bw() +
+    scale_y_log10()
+```
+
+```{r matchstudy, message=FALSE, fig.cap="Distribution of the CCF, colored by match, for different study to study comparisons of lands."}
+ggplot(CCFs_train, aes(x = matches, fill = match)) +
+    geom_histogram(bins = 50, alpha = I(0.8)) +
+    facet_wrap(~study) +
+    theme_bw() +
+    scale_y_log10()
+```
+
+Figure \ref{fig:studystudy} provides panels for the different study to study land comparisons, colored by the predicted study as given by the forest.
+
+```{r studystudy, fig.cap="Study to study comparison of lands, colored by the predicted class."}
+ggplot(CCFs_test, aes(x = matches, fill = study_forest)) +
+    geom_histogram(bins = 50, alpha = I(0.8)) +
+    facet_wrap(~study, scales = "free") +
     theme_bw()
 ```
 
-```{r, echo=FALSE, results="hide"}
-includes <- setdiff(names(result), c("id", "compare_id", "profile1_id", "profile2_id", "signature_length", "land1_id", "land2_id"))
-
-library(randomForest)
-
-rtrees <- randomForest(factor(match) ~ ., data = result[,includes], ntree = 300)
-result$forest <- predict(rtrees, type = "prob")[,2]
-imp <- data.frame(importance(rtrees))
-xtabs(~(forest > 0.5) + match, data = result)
-```
