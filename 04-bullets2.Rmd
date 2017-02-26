@@ -45,6 +45,8 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(randomForest)
+library(caret)
+library(purrr)
 
 dbname <- "bullets"
 user <- "buser"
@@ -264,68 +266,104 @@ CCFs_withlands <- ccf %>%
 With this data, we can now train the forest. We split the data into an 80% training, 20% testing framework to assess its out of sample performance.
 
 ```{r}
-set.seed(20170222)
-CCFs_train <- sample_frac(CCFs_withlands, size = .8)
-CCFs_test = setdiff(CCFs_withlands, CCFs_train)
-
-includes <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id",
+includes <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
                                          "study.x", "study.y", "barrel.x", "barrel.y",
                                          "bullet.x", "bullet.y", "land.x", "land.y",
                                          "land_id.x", "land_id.y"))
 
-rtrees <- randomForest(factor(match) ~ ., data = CCFs_train[,includes], ntree = 300)
-CCFs_test$forest <- predict(rtrees, newdata = CCFs_test, type = "prob")[,2]
-imp <- data.frame(importance(rtrees))
-xtabs(~(forest > 0.5) + match, data = CCFs_test)
+set.seed(20170222)
+trainIndex <- createDataPartition(1:nrow(CCFs_withlands), p = 0.8, list = TRUE, times = 10)
+match_result <- trainIndex %>% purrr::map_df(function(index) {
+    CCFs_train <- CCFs_withlands[index,]
+    CCFs_test = setdiff(CCFs_withlands, CCFs_train)
+    
+    rtrees <- randomForest(factor(match) ~ ., data = CCFs_train[,includes], ntree = 300)
+    
+    CCFs_test$forest <- predict(rtrees, newdata = CCFs_test, type = "prob")[,2]
+    imp <- data.frame(importance(rtrees))
+    confmat <- as.data.frame(xtabs(~(forest > 0.5) + match + study.x + study.y, data = CCFs_test))
+    names(confmat) <- c("Prediction", "Actual", "study.x", "study.y", "Count")
+    
+    mydf <- confmat %>%
+        mutate(Result = rep(c("True Negative", "False Positive", "False Negative", "True Positive"), times = 9),
+               Study = paste(study.x, study.y, sep = "_")) %>%
+        select(Study, Result, Count) %>%
+        group_by(Study) %>%
+        filter(any(Count > 0)) %>%
+        as.data.frame
+    
+    return(mydf)
+}) 
+match_result <- cbind(id = rep(1:10, each = nrow(match_result) / 10), match_result)
+match_result_wide <- match_result %>%
+    spread(key = Result, value = Count)
+
+match_result %>%
+    group_by(Result) %>%
+    summarise(Count = mean(Count))
 ```
 
 The confusion matrix suggests that false negatives are a serious problem. In other words, our algorithm is a bit too conservative in predicting a match when in fact the bullets were fired from the same gun barrel. We can break down the confusion matrix depending on the study that each of the two lands originated from.
 
 ```{r}
-xtabs(~(forest > 0.5) + match + study.x + study.y, data = CCFs_test)
+match_result %>%
+    group_by(Study, Result) %>%
+    summarise(Count = mean(Count))
 ```
 
 What we find is that both the rate and the raw number of false negatives is being artificially inflated by comparisons between lands from the Cary Persistence study. We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study.
 
 ```{r}
-CCFs_train$study <- factor(paste(CCFs_train$study.x, CCFs_train$study.y, sep = "_"))
-CCFs_test$study <- factor(paste(CCFs_test$study.x, CCFs_test$study.y, sep = "_"))
-
-includes_study <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id",
+includes_study <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
                                          "barrel.x", "barrel.y", "match",
                                          "bullet.x", "bullet.y", "land.x", "land.y",
                                          "land_id.x", "land_id.y", "study.x", "study.y"))
 
-rtrees_study <- randomForest(study ~ ., data = CCFs_train[,includes_study], ntree = 300)
-CCFs_test$study_forest <- predict(rtrees_study, newdata = CCFs_test)
-mytbl <- xtabs(~study_forest + study, data = CCFs_test)
-mytbl / colSums(mytbl)
+result_study <- trainIndex %>% purrr::map_df(function(index) {
+    CCFs_train <- CCFs_withlands[index,]
+    CCFs_test = setdiff(CCFs_withlands, CCFs_train)
+    
+    CCFs_train$study <- factor(paste(CCFs_train$study.x, CCFs_train$study.y, sep = "_"))
+    CCFs_test$study <- factor(paste(CCFs_test$study.x, CCFs_test$study.y, sep = "_"))
+    
+    includes_study <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id", "barrel.x", "barrel.y", "match", "bullet.x", "bullet.y", "land.x", "land.y", "land_id.x", "land_id.y", "study.x", "study.y"))
+
+    rtrees_study <- randomForest(study ~ ., data = CCFs_train[,includes_study], ntree = 300)
+    
+    CCFs_test$study_forest <- predict(rtrees_study, newdata = CCFs_test)
+    confmat <- as.data.frame(xtabs(~study_forest + study, data = CCFs_test))
+    names(confmat) <- c("Prediction", "Actual", "Count")
+    
+    return(confmat)
+})
 ```
 
-Figures \ref{fig:ccfstudy} and \ref{fig:matchstudy} give the distribution of the CCF and the number of matches, respectively, colored by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons.
+```{r}
+study_result <- cbind(id = rep(1:10, each = nrow(result_study) / 10), result_study)
+study_result_wide <- study_result %>%
+    spread(key = Actual, value = Count) %>%
+    group_by(Prediction) %>%
+    summarise_each(funs(mean)) %>%
+    select(-id) %>%
+    as.data.frame
+study_result_wide
+```
 
-```{r ccfstudy, message=FALSE, fig.cap="Distribution of the CCF, colored by match, for different study to study comparisons of lands."}
-ggplot(CCFs_train, aes(x = ccf, fill = match)) +
-    geom_histogram(bins = 50, alpha = I(0.8)) +
-    facet_wrap(~study) +
+Figure \ref{fig:ccfstudy} give the distributions of the features defined above, faceted by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons.
+
+```{r ccfstudy, echo=FALSE, message=FALSE, fig.cap="Distribution of the features, facetted by match, for different study to study comparisons of lands.", fig.height=13, fig.width=10}
+CCFs_features <- CCFs_withlands %>%
+    mutate(study = factor(paste(study.x, study.y, sep = "_"))) %>%
+    select(-matches("_id|study.x|study.y|barrel|bullet|land|signature_length|non_cms|sd_D|lag")) %>%
+    select(study, match, everything()) %>%
+    gather(key = feature, value = value, 3:ncol(.))
+
+ggplot(CCFs_features, aes(x = study, y = value)) +
+    geom_boxplot() +
     theme_bw() +
-    scale_y_log10()
+    theme(axis.text.x = element_text(angle = 90)) +
+    facet_grid(feature~match, scales = "free") +
+    ggtitle("Distributions of Features by Study and Match") +
+    xlab("Study") +
+    ylab("Value")
 ```
-
-```{r matchstudy, message=FALSE, fig.cap="Distribution of the CCF, colored by match, for different study to study comparisons of lands."}
-ggplot(CCFs_train, aes(x = matches, fill = match)) +
-    geom_histogram(bins = 50, alpha = I(0.8)) +
-    facet_wrap(~study) +
-    theme_bw() +
-    scale_y_log10()
-```
-
-Figure \ref{fig:studystudy} provides panels for the different study to study land comparisons, colored by the predicted study as given by the forest.
-
-```{r studystudy, fig.cap="Study to study comparison of lands, colored by the predicted class."}
-ggplot(CCFs_test, aes(x = matches, fill = study_forest)) +
-    geom_histogram(bins = 50, alpha = I(0.8)) +
-    facet_wrap(~study, scales = "free") +
-    theme_bw()
-```
-
