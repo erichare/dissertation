@@ -367,3 +367,26 @@ ggplot(CCFs_features, aes(x = study, y = value)) +
     xlab("Study") +
     ylab("Value")
 ```
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+all_combinations <- combn(unique(c(as.character(CCFs_features$study), as.character(CCFs_features$study))), 2, simplify = FALSE)
+
+myresult <- all_combinations %>% map_df(function(x) {
+    final_result <- try({
+        set1 <- filter(CCFs_features, study == x[1])
+        set2 <- filter(CCFs_features, study == x[2])
+        
+        result <- set1 %>%
+            rbind(set2) %>%
+            group_by(feature) %>%
+            do(matchtest = ks.test(x = filter(., study == x[1])$value[filter(., study == x[1])$match], y = filter(., study == x[2])$value[filter(., study == x[2])$match])$p.value,
+               nonmatchtest = ks.test(x = filter(., study == x[1])$value[!filter(., study == x[1])$match], y = filter(., study == x[2])$value[!filter(., study == x[2])$match])$p.value
+            )
+    })
+    
+    if (inherits(final_result, "try-error")) return(NULL)
+    
+    return(final_result %>% mutate(set1 = x[1], set2 = x[2]) %>% select(set1, set2, everything()) %>% as.data.frame)
+})
+```
+
