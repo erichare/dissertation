@@ -260,6 +260,8 @@ CCFs_withlands <- ccf %>%
     left_join(my_matches, by = c("land_id.x" = "land1_id", "land_id.y" = "land2_id")) %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.x" = "land_id")) %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
+    filter(study.x != "Cary", study.y != "Cary") %>%
+    arrange(study.x, study.y) %>%
     mutate(match = as.logical(match)) 
 ```
 
@@ -285,11 +287,12 @@ match_result <- trainIndex %>% purrr::map_df(function(index) {
     names(confmat) <- c("Prediction", "Actual", "study.x", "study.y", "Count")
     
     mydf <- confmat %>%
-        mutate(Result = rep(c("True Negative", "False Positive", "False Negative", "True Positive"), times = 9),
-               Study = paste(study.x, study.y, sep = "_")) %>%
+        mutate(Study = paste(study.x, study.y, sep = "_"),
+               Result = rep(c("True Negative", "False Positive", "False Negative", "True Positive"), times = length(unique(Study)))) %>%
+        mutate(Study = replace(Study, which(Study == "Hamby44_Hamby252"), "Hamby252_Hamby44")) %>%
         select(Study, Result, Count) %>%
-        group_by(Study) %>%
-        filter(any(Count > 0)) %>%
+        group_by(Study, Result) %>%
+        summarise(Count = sum(Count)) %>%
         as.data.frame
     
     return(mydf)
@@ -311,7 +314,7 @@ match_result %>%
     summarise(Count = mean(Count))
 ```
 
-What we find is that both the rate and the raw number of false negatives is being artificially inflated by comparisons between lands from the Cary Persistence study. We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study.
+We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study.
 
 ```{r}
 includes_study <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
@@ -323,15 +326,17 @@ result_study <- trainIndex %>% purrr::map_df(function(index) {
     CCFs_train <- CCFs_withlands[index,]
     CCFs_test = setdiff(CCFs_withlands, CCFs_train)
     
-    CCFs_train$study <- factor(paste(CCFs_train$study.x, CCFs_train$study.y, sep = "_"))
-    CCFs_test$study <- factor(paste(CCFs_test$study.x, CCFs_test$study.y, sep = "_"))
+    CCFs_train$Study <- paste(CCFs_train$study.x, CCFs_train$study.y, sep = "_")
+    CCFs_test$Study <- paste(CCFs_test$study.x, CCFs_test$study.y, sep = "_")
+    CCFs_train$Study <- factor(replace(CCFs_train$Study, which(CCFs_train$Study == "Hamby44_Hamby252"), "Hamby252_Hamby44"))
+    CCFs_test$Study <- factor(replace(CCFs_test$Study, which(CCFs_test$Study == "Hamby44_Hamby252"), "Hamby252_Hamby44"))
     
     includes_study <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id", "barrel.x", "barrel.y", "match", "bullet.x", "bullet.y", "land.x", "land.y", "land_id.x", "land_id.y", "study.x", "study.y"))
 
-    rtrees_study <- randomForest(study ~ ., data = CCFs_train[,includes_study], ntree = 300)
+    rtrees_study <- randomForest(Study ~ ., data = CCFs_train[,includes_study], ntree = 300)
     
     CCFs_test$study_forest <- predict(rtrees_study, newdata = CCFs_test)
-    confmat <- as.data.frame(xtabs(~study_forest + study, data = CCFs_test))
+    confmat <- as.data.frame(xtabs(~study_forest + Study, data = CCFs_test))
     names(confmat) <- c("Prediction", "Actual", "Count")
     
     return(confmat)
@@ -347,18 +352,30 @@ study_result_wide <- study_result %>%
     select(-id) %>%
     as.data.frame
 study_result_wide
+study_result_wide_col <- study_result_wide
+study_result_wide_col[,-1] <- apply(study_result_wide_col[,-1], 2, function(x) x / sum(x))
+study_result_wide_col
 ```
 
 Figure \ref{fig:ccfstudy} give the distributions of the features defined above, faceted by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons.
 
 ```{r ccfstudy, echo=FALSE, message=FALSE, fig.cap="Distribution of the features, facetted by match, for different study to study comparisons of lands.", fig.height=13, fig.width=10}
 CCFs_features <- CCFs_withlands %>%
-    mutate(study = factor(paste(study.x, study.y, sep = "_"))) %>%
+    mutate(Study = factor(paste(study.x, study.y, sep = "_"))) %>%
+    mutate(Study = replace(Study, which(Study == "Hamby44_Hamby252"), "Hamby252_Hamby44")) %>%
     select(-matches("_id|study.x|study.y|barrel|bullet|land|signature_length|non_cms|sd_D|lag")) %>%
-    select(study, match, everything()) %>%
+    select(Study, match, everything()) %>%
+    mutate(match = factor(match, labels = c("Known Non-Match", "Known Match"))) %>%
     gather(key = feature, value = value, 3:ncol(.))
 
-ggplot(CCFs_features, aes(x = study, y = value)) +
+## DONE TODO: Name FALSE/TRUE Known Matches / Known Non-Matches
+## DONE INCLUDE number of points for each comparison
+## DONE Exclude Cary. Show 252-252 looks a bit strange - the features are particularly good.
+## DONE Run forest without cary
+## Talk about operator or scan demographics needing to be included. Need rigorous procedures in place
+## Pull out "D" statistic for KS tests, looks at vertical difference. Put with p-value.
+
+ggplot(CCFs_features, aes(x = Study, y = value)) +
     geom_boxplot() +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90)) +
@@ -369,18 +386,22 @@ ggplot(CCFs_features, aes(x = study, y = value)) +
 ```
 
 ```{r, message=FALSE, warning=FALSE, error=FALSE}
-all_combinations <- combn(unique(c(as.character(CCFs_features$study), as.character(CCFs_features$study))), 2, simplify = FALSE)
+all_combinations <- combn(unique(c(as.character(CCFs_features$Study), as.character(CCFs_features$Study))), 2, simplify = FALSE)
 
 myresult <- all_combinations %>% map_df(function(x) {
     final_result <- try({
-        set1 <- filter(CCFs_features, study == x[1])
-        set2 <- filter(CCFs_features, study == x[2])
+        set1 <- filter(CCFs_features, Study == x[1])
+        set2 <- filter(CCFs_features, Study == x[2])
         
         result <- set1 %>%
             rbind(set2) %>%
             group_by(feature) %>%
-            do(matchtest = ks.test(x = filter(., study == x[1])$value[filter(., study == x[1])$match], y = filter(., study == x[2])$value[filter(., study == x[2])$match])$p.value,
-               nonmatchtest = ks.test(x = filter(., study == x[1])$value[!filter(., study == x[1])$match], y = filter(., study == x[2])$value[!filter(., study == x[2])$match])$p.value
+            do(matchtest = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Match"])$p.value,
+               nonmatchtest = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Non-Match"])$p.value,
+               set1_matchcount = length(filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"]),
+               set1_nonmatchcount = length(filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"]),
+               set2_matchcount = length(filter(., Study == x[2])$value[filter(., Study == x[1])$match == "Known Match"]),
+               set2_nonmatchcount = length(filter(., Study == x[2])$value[filter(., Study == x[1])$match == "Known Non-Match"])
             )
     })
     
@@ -388,5 +409,7 @@ myresult <- all_combinations %>% map_df(function(x) {
     
     return(final_result %>% mutate(set1 = x[1], set2 = x[2]) %>% select(set1, set2, everything()) %>% as.data.frame)
 })
+myresult %>%
+    as.data.frame
 ```
 
