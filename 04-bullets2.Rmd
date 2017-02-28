@@ -178,8 +178,8 @@ my_ccf <- tbl(my_db, "ccf")
 
 result <- my_ccf %>% 
     filter(profile1_id == myprof$profile_id, 
-           compare_id == 3) %>%
-    select(profile1_id, profile2_id, ccf, double_cor, D, overlap, matches, cms, sumpeaks) %>%
+           compare_id == 4) %>%
+    select(profile1_id, profile2_id, ccf, rough_cor, D, overlap, matches, cms, sum_peaks) %>%
     collect() %>%
     slice(5:10) %>%
     as.data.frame
@@ -197,7 +197,7 @@ To start, we introduce each feature provided in the CCF database table. Table \r
 
 ```{r, echo=FALSE, results='asis'}
 result <- my_ccf %>%
-    filter(compare_id == 3) %>%
+    filter(compare_id == 4) %>%
     head %>%
     collect %>%
     select(1:8) %>%
@@ -208,7 +208,7 @@ print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", 
 
 ```{r, echo=FALSE, results='asis'}
 result2 <- my_ccf %>%
-    filter(compare_id == 3) %>%
+    filter(compare_id == 4) %>%
     head %>%
     collect %>%
     select(9:ncol(.)) %>%
@@ -220,17 +220,17 @@ print(xtable(result2, digits = c(4, 4, 4, 4, 4, 4, 4, 4), label = "tab:ccf2", ca
 The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particular cross-comparison between two profiles, with the given `compare_id` parameters. The remaining columns are the relevant features for the comparison. The definitions of the features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
 
 - **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The Cross-Correlation function is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
-- **double_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures. This attempts to model the roughness of the surface after removing the waviness.
-- **lag** (millimeters) Is the optimal lag for the ccf value.
-- **D** is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
-- **sd_D** provides the standard deviation of the values of *D* from above.
-- **signature_length** (millimeters) is the overall length of the smallest of the two aligned signatures.
+- **rough_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures. This attempts to model the roughness of the surface after removing the waviness.
+- **lag** (mm) Is the optimal lag for the ccf value.
+- **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
+- **sd_D** (mm) provides the standard deviation of the values of *D* from above.
+- **signature_length** (mm) is the overall length of the smallest of the two aligned signatures.
 - **overlap** (%) provides the percentage of the two signatures that overlap after the alignment stage.
-- **matches** (millimeters) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
-- **mismatches** (millimeters) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
-- **cms** (millimeters) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
-- **non_cms** (millimeters) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
-- **sumpeaks** (millimeters) is the the sum of the average heights of matched striae.
+- **matches** (per mm) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **mismatches** (per mm) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **cms** (per mm) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
+- **non_cms** (per mm) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **sum_peaks** (per mm) is the the sum of the average heights of matched striae.
 
 Using these features the randomForest [@randomForest] package, we can train a model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
 
@@ -251,7 +251,7 @@ CCFs_withlands <- ccf %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
     filter(study.x != "Cary", study.y != "Cary") %>%
     arrange(study.x, study.y) %>%
-    mutate(match = as.logical(match)) 
+    mutate(match = as.logical(replace(match, is.na(match), 0)))
 ```
 
 We can now train the forest using the previously defined features. We split the data into an 80% training, 20% testing framework to assess its out of sample performance, using the `caret` package [@caretpkg]. Table \ref{tab:avgforest} provides the results as a confusion matrix on the test set, averaged over ten independent random forests trained on ten random data subsets. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently (approximately 23 false negative land to land comparisons on the test set, compared with an average of less than one false positive).
@@ -279,7 +279,7 @@ match_result <- trainIndex %>% purrr::map_df(function(index) {
         mutate(Study = paste(study.x, study.y, sep = "_"),
                Result = rep(c("True Negative", "False Positive", "False Negative", "True Positive"), times = length(unique(Study)))) %>%
         mutate(Study = replace(Study, which(Study == "Hamby44_Hamby252"), "Hamby252_Hamby44")) %>%
-        select(Study, Result, Count) %>%
+        dplyr::select(Study, Result, Count) %>%
         group_by(Study, Result) %>%
         summarise(Count = sum(Count)) %>%
         as.data.frame
@@ -353,7 +353,7 @@ study_result_wide_col[,-1] <- apply(study_result_wide_col[,-1], 2, function(x) x
 print(xtable(study_result_wide_col, digits = c(0, 0, 3, 3, 3), label = "tab:studypred", caption = "Confusion Matrix (Column Proportions) for the random forest with study as the response. It can be seen that while overall the random forest performs poorly, as hoped, comparisons between Hamby252 bullets is more distinguishable from other comparisons."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
 
-Figure \ref{fig:ccfstudy} give the distributions of the features defined above, faceted by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons. The distributions among the known non-matches seem relatively consistent across study based on visual inspection. On the other hand, among known matches, Hamby252 to Hamby252 comparisons exhibit more pronounced features, including a higher average ccf, higher number of matches, and higher value of sumpeaks.
+Figure \ref{fig:ccfstudy} give the distributions of the features defined above, faceted by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons. The distributions among the known non-matches seem relatively consistent across study based on visual inspection. On the other hand, among known matches, Hamby252 to Hamby252 comparisons exhibit more pronounced features, including a higher average ccf, higher number of matches, and higher value of sum_peaks.
 
 ```{r ccfstudy, echo=FALSE, message=FALSE, fig.cap="Distribution of the features, facetted by match, for different study to study comparisons of lands.", fig.height=13, fig.width=10}
 CCFs_features <- CCFs_withlands %>%
@@ -381,7 +381,7 @@ ggplot(CCFs_features, aes(x = Study, y = value)) +
     ylab("Value")
 ```
 
-We can assess the differences in the distributions formally with a Kolmogrov-Smirnov test. Table \ref{tab:kstests} gives the results of pairwise tests, for each feature, between different set comparisons, and between known matches compared with known non-matches. Although the tests are significant, looking at the raw values of the $D$ statistic suggest that the largest effect sizes do in fact occur in comparisons with two Hamby252 lands, as the visual inspection of the boxplots also suggested.
+We can assess the differences in the distributions formally with a Kolmogrov-Smirnov test. Table \ref{tab:kstests} gives the results of pairwise tests, for each feature, between different set comparisons, and between known matches compared with known non-matches. Although the tests are significant, looking at the raw values of the D statistic suggest that the largest effect sizes do in fact occur in comparisons with two Hamby252 lands, as the visual inspection of the boxplots also suggested.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE, results='asis'}
 all_combinations <- combn(unique(c(as.character(CCFs_features$Study), as.character(CCFs_features$Study))), 2, simplify = FALSE)
@@ -420,3 +420,22 @@ print(xtable(final_result[,1:7], digits = c(0, 0, 0, 0, 3, 3, 3, 3), label = "ta
 ```
 
 These results strongly suggest the need for controlling for more effects when performing the analysis. Specifically, microscope operator effects resulting in variations in scan quality and scan parameters seem to play a role in the utlimate performance of the algorithm. Land to land comparisons from Hamby252 consistently result in more pronounced expression of features among known matches, and therefore result in a better ultimate accuracy in the random forest. Rigorous procedures to ensure scan quality and consistency across operators should be put in place to minimize the effect of the study and ensure the assumption of land to land independence is satisfied.
+
+Another way to demostrate the study/operator effect is by observing the distribution of our algorithm's ideal cross section by study. Figure \ref{fig:crosscompare} gives the distributions of the ideal cross sections by study. It can be seen that the Hamby44 ideal cross sections are much more likely to be close to the base of the bullet compared to Hamby252.
+
+```{r crosscompare, echo=FALSE, fig.cap='Distributions of the ideal cross sections by study. It can be seen that the Hamby44 ideal cross sections are much more likely to be close to the base of the bullet compared to Hamby252.'}
+result <- dbReadTable(con, "metadata_derived") %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study)) %>%
+    filter(run_id == max(run_id)) %>%
+    dplyr::select(land_id, ideal_crosscut, study) %>%
+    filter(!is.na(ideal_crosscut), study != "Cary")
+
+#ks.test(x = result$ideal_crosscut[result$study == "Hamby252"], y = result$ideal_crosscut[result$study == "Hamby44"])
+
+ggplot(result, aes(x = study, y = ideal_crosscut)) +
+    geom_boxplot() +
+    theme_bw() +
+    ylim(c(0, 400)) +
+    ggtitle("Distribution of Ideal Cross Section by Study")
+```
+
