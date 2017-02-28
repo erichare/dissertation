@@ -93,7 +93,7 @@ result <- my_metadata %>%
 ```
 
 ```{r, echo=FALSE, results='asis'}
-print(xtable(result, digits = c(0, 0, 0, 0, 0, 0, 0, 0, 4, 4), label = "tab:metadata", caption = "A sample of 12 rows of the metadata table. The land id column identifies the bullet land under consideration. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers)"), comment = FALSE, include.rownames = FALSE)
+print(xtable(result[,1:7], digits = c(0, 0, 0, 0, 0, 0, 0, 0), label = "tab:metadata", caption = "A sample of 12 rows of the metadata table. The land id column identifies the bullet land under consideration. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers)"), comment = FALSE, include.rownames = FALSE)
 ```
 
 ## Metadata Derived
@@ -245,7 +245,7 @@ The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particula
 
 Using these features the randomForest [@randomForest] package, we can train a model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary.
 
-```{r, cache=FALSE}
+```{r, echo=FALSE, cache=FALSE}
 con <- dbConnect(MySQL(), user = user, password = password,
                  dbname = dbname, host = host)
 
@@ -265,9 +265,9 @@ CCFs_withlands <- ccf %>%
     mutate(match = as.logical(match)) 
 ```
 
-With this data, we can now train the forest. We split the data into an 80% training, 20% testing framework to assess its out of sample performance.
+With this data, we can now train the forest. We split the data into an 80% training, 20% testing framework to assess its out of sample performance. Table \ref{tab:avgforest} provides the results as a confusion matrix, averaged over 10 independent random forests. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently.
 
-```{r}
+```{r, echo=FALSE, results='asis'}
 includes <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
                                          "study.x", "study.y", "barrel.x", "barrel.y",
                                          "bullet.x", "bullet.y", "land.x", "land.y",
@@ -301,22 +301,27 @@ match_result <- cbind(id = rep(1:10, each = nrow(match_result) / 10), match_resu
 match_result_wide <- match_result %>%
     spread(key = Result, value = Count)
 
-match_result %>%
+result <- match_result %>%
     group_by(Result) %>%
     summarise(Count = mean(Count))
+
+print(xtable(result, digits = c(0, 0, 3), label = "tab:avgforest", caption = "The average confusion matrix for the 10 random forests. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
 
-The confusion matrix suggests that false negatives are a serious problem. In other words, our algorithm is a bit too conservative in predicting a match when in fact the bullets were fired from the same gun barrel. We can break down the confusion matrix depending on the study that each of the two lands originated from.
+The confusion matrix suggests that false negatives are a serious problem. In other words, our algorithm is a bit too conservative in predicting a match when in fact the bullets were fired from the same gun barrel. We can break down the confusion matrix depending on the study that each of the two lands originated from. Table \ref{tab:avgforeststudy} provides the average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average.
 
-```{r}
-match_result %>%
+```{r, echo=FALSE, results='asis'}
+result <- match_result %>%
     group_by(Study, Result) %>%
-    summarise(Count = mean(Count))
+    summarise(Count = mean(Count)) %>%
+    spread(key = Result, value = Count)
+
+print(xtable(result, digits = c(0, 0, 1, 1, 1, 1), label = "tab:avgforeststudy", caption = "The average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
 
 We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study.
 
-```{r}
+```{r, echo=FALSE}
 includes_study <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
                                          "barrel.x", "barrel.y", "match",
                                          "bullet.x", "bullet.y", "land.x", "land.y",
@@ -343,7 +348,9 @@ result_study <- trainIndex %>% purrr::map_df(function(index) {
 })
 ```
 
-```{r}
+Table \ref{tab:studypred} provides the confusion matrix, with column proportions, for the random forest with study as the response. It can be seen that while overall the random forest performs poorly, as hoped, comparisons between Hamby252 bullets is more distinguishable from other comparisons.
+
+```{r, echo=FALSE, results='asis'}
 study_result <- cbind(id = rep(1:10, each = nrow(result_study) / 10), result_study)
 study_result_wide <- study_result %>%
     spread(key = Actual, value = Count) %>%
@@ -351,10 +358,10 @@ study_result_wide <- study_result %>%
     summarise_each(funs(mean)) %>%
     select(-id) %>%
     as.data.frame
-study_result_wide
 study_result_wide_col <- study_result_wide
 study_result_wide_col[,-1] <- apply(study_result_wide_col[,-1], 2, function(x) x / sum(x))
-study_result_wide_col
+
+print(xtable(study_result_wide_col, digits = c(0, 0, 3, 3, 3), label = "tab:studypred", caption = "Confusion Matrix (Column Proportions) for the random forest with study as the response. It can be seen that while overall the random forest performs poorly, as hoped, comparisons between Hamby252 bullets is more distinguishable from other comparisons."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
 
 Figure \ref{fig:ccfstudy} give the distributions of the features defined above, faceted by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons.
@@ -373,7 +380,7 @@ CCFs_features <- CCFs_withlands %>%
 ## DONE Exclude Cary. Show 252-252 looks a bit strange - the features are particularly good.
 ## DONE Run forest without cary
 ## Talk about operator or scan demographics needing to be included. Need rigorous procedures in place
-## Pull out "D" statistic for KS tests, looks at vertical difference. Put with p-value.
+## DONE Pull out "D" statistic for KS tests, looks at vertical difference. Put with p-value.
 
 ggplot(CCFs_features, aes(x = Study, y = value)) +
     geom_boxplot() +
@@ -385,7 +392,9 @@ ggplot(CCFs_features, aes(x = Study, y = value)) +
     ylab("Value")
 ```
 
-```{r, message=FALSE, warning=FALSE, error=FALSE}
+We can assess the distributions formally with a Kolmogrov-Smirnov test. Table \ref{tab:kstests} gives the results of pairwise tests, for each feature, between different set comparisons, and between known matches compared with known non-matches.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE, results='asis'}
 all_combinations <- combn(unique(c(as.character(CCFs_features$Study), as.character(CCFs_features$Study))), 2, simplify = FALSE)
 
 myresult <- all_combinations %>% map_df(function(x) {
@@ -397,11 +406,14 @@ myresult <- all_combinations %>% map_df(function(x) {
             rbind(set2) %>%
             group_by(feature) %>%
             do(matchtest = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Match"])$p.value,
+               matchd = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Match"])$statistic,
                nonmatchtest = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Non-Match"])$p.value,
+               nonmatchd = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Non-Match"])$statistic,
                set1_matchcount = length(filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"]),
                set1_nonmatchcount = length(filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"]),
                set2_matchcount = length(filter(., Study == x[2])$value[filter(., Study == x[1])$match == "Known Match"]),
                set2_nonmatchcount = length(filter(., Study == x[2])$value[filter(., Study == x[1])$match == "Known Non-Match"])
+               
             )
     })
     
@@ -409,7 +421,12 @@ myresult <- all_combinations %>% map_df(function(x) {
     
     return(final_result %>% mutate(set1 = x[1], set2 = x[2]) %>% select(set1, set2, everything()) %>% as.data.frame)
 })
-myresult %>%
+
+final_result <- myresult %>%
+    mutate(set1 = gsub("Hamby", "H", set1),
+           set2 = gsub("Hamby", "H", set2)) %>%
     as.data.frame
+
+print(xtable(final_result[,1:7], digits = c(0, 0, 0, 0, 3, 3, 3, 3), label = "tab:kstests", caption = "Results for the Kolmogrov-Smirnov distributional test."), comment = FALSE, include.rownames = FALSE)
 ```
 
