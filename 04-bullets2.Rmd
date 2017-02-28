@@ -379,7 +379,7 @@ CCFs_features <- CCFs_withlands %>%
 ## DONE INCLUDE number of points for each comparison
 ## DONE Exclude Cary. Show 252-252 looks a bit strange - the features are particularly good.
 ## DONE Run forest without cary
-## Talk about operator or scan demographics needing to be included. Need rigorous procedures in place
+## DONE Talk about operator or scan demographics needing to be included. Need rigorous procedures in place
 ## DONE Pull out "D" statistic for KS tests, looks at vertical difference. Put with p-value.
 
 ggplot(CCFs_features, aes(x = Study, y = value)) +
@@ -392,7 +392,7 @@ ggplot(CCFs_features, aes(x = Study, y = value)) +
     ylab("Value")
 ```
 
-We can assess the distributions formally with a Kolmogrov-Smirnov test. Table \ref{tab:kstests} gives the results of pairwise tests, for each feature, between different set comparisons, and between known matches compared with known non-matches.
+We can assess the distributions formally with a Kolmogrov-Smirnov test. Table \ref{tab:kstests} gives the results of pairwise tests, for each feature, between different set comparisons, and between known matches compared with known non-matches. Although the tests are significant, looking at the raw values of the $D$ statistic suggest that the largest effect sizes do in fact occur in comparisons with two Hamby252 lands, as the visual inspection of the boxplots also suggested.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE, results='asis'}
 all_combinations <- combn(unique(c(as.character(CCFs_features$Study), as.character(CCFs_features$Study))), 2, simplify = FALSE)
@@ -430,3 +430,4 @@ final_result <- myresult %>%
 print(xtable(final_result[,1:7], digits = c(0, 0, 0, 0, 3, 3, 3, 3), label = "tab:kstests", caption = "Results for the Kolmogrov-Smirnov distributional test."), comment = FALSE, include.rownames = FALSE)
 ```
 
+These results strongly suggest the need for controlling for more effects when performing the analysis. Specifically, microscope operator effects resulting in variations in scan quality and scan parameters seem to play a role in the utlimate performance of the algorithm. Land to land comparisons from Hamby252 consistently result in more pronounced expression of features among known matches, and therefore result in a better ultimate accuracy in the random forest. Rigorous procedures to ensure scan quality and consistency across operators should be put in place to minimize the effect of the study and ensure the assumption of land to land independence is satisfied.
