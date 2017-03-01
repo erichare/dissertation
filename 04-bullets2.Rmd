@@ -41,12 +41,12 @@ We can connect to the database using the `dplyr` package.
 ```{r, message=FALSE, cache=FALSE}
 library(xtable)
 library(RMySQL)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+library(tidyverse)
+library(bulletr)
+library(gridExtra)
 library(randomForest)
 library(caret)
-library(purrr)
+library(broom)
 
 dbname <- "bullets"
 user <- "buser"
@@ -193,6 +193,8 @@ print(xtable(result, digits = c(0, 0, 0, 3, 3, 3, 3, 3, 3, 3), label = "tab:ccf"
 
 With the database structure defined, we turn our attention to using the database to perform a feature analysis using the bullets provided in the NBTRD. The modular structure of the database allows us to extract pre-derived features without performing the intermediate computations, which in turn allows for easier in depth exploration.
 
+## Feature Standardization
+
 To start, we introduce each feature provided in the CCF database table. Table \ref{tab:ccf1} provides the first eight columns of the CCF table, and Table \ref{tab:ccf2} provides the remaining seven columns.
 
 ```{r, echo=FALSE, results='asis'}
@@ -217,7 +219,7 @@ result2 <- my_ccf %>%
 print(xtable(result2, digits = c(4, 4, 4, 4, 4, 4, 4, 4), label = "tab:ccf2", caption = "The remaining derived features for the previous six land-to-land comparisons."), comment = FALSE, include.rownames = FALSE)
 ```
 
-The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particular cross-comparison between two profiles, with the given `compare_id` parameters. The remaining columns are the relevant features for the comparison. The definitions of the features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
+The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particular cross-comparison between two profiles, with the given `compare_id` parameters. The remaining columns are the relevant features for the comparison. The definitions of the features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each feature are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
 
 - **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The Cross-Correlation function is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
 - **rough_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures. This attempts to model the roughness of the surface after removing the waviness.
@@ -231,6 +233,106 @@ The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particula
 - **cms** (per mm) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
 - **non_cms** (per mm) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
 - **sum_peaks** (per mm) is the the sum of the average heights of matched striae.
+
+The `rough_cor` or Roughness Correlation is derived by performing a second smoothing step, and subtracting the result from the original signatures. This creates a new signature which eliminates some of the overall structure, allowing global deformations to have less of an influence on the model output. In a typical comparison between two profiles, such as in Figure \ref{fig:roughcorfine}, the roughness correlation may not be needed given the presence of the ccf in the model. In this figure, we see the alignment of profile 8752 with 136676/ The top panel shows the smoothed signature, while the bottom panel shows the doubly smoothed signatures used to compute the roughness correlation. These profiles match, and both ccf (0.6891) and rough_cor (0.7980) provide values indicative of matching.
+
+```{r roughcorfine, echo=FALSE, fig.cap='Alignment of profile 8752 with 136676. The top panel shows the smoothed signature, while the bottom panel shows the doubly smoothed signatures used to compute the roughness correlation. These profiles match, and both ccf (0.6891) and rough_cor (0.7980) provide values indicative of matching.'}
+bullets_smoothed <- my_signatures %>% filter(run_id == 3) %>% collect(n = Inf)
+
+br1 <- filter(bullets_smoothed, profile_id == 8752) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+br2 <- filter(bullets_smoothed, profile_id == 136676) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+
+res <- bulletGetMaxCMS(br1, br2, column = "l30", span = 5)
+
+prof1_zeroed <- br1 %>% 
+    mutate(y = y - min(y),
+           profile_id = factor(bullet))
+
+prof2_zeroed <- br2 %>%
+    mutate(y = y - min(y)) %>%
+    mutate(y = y + res$lag,
+           profile_id = factor(bullet))
+
+final_profs <- rbind(prof1_zeroed, prof2_zeroed)
+
+p1 <- ggplot(data = final_profs, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+doublesmoothed <- final_profs %>%
+    group_by(y) %>%
+    mutate(avgl30 = mean(l30, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(smoothavgl30 = smoothloess(x = y, y = avgl30, span = 0.3),
+           l50 = l30 - smoothavgl30)
+
+ys <- intersect(prof1_zeroed$y, prof2_zeroed$y)
+    
+final_doublesmoothed <- doublesmoothed %>%
+    filter(y %in% ys)
+
+p2 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l50, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+grid.arrange(p1, p2, nrow = 2)
+```
+
+Where the roughness correlation is most useful is in a scenario like Figure \ref{fig:roughcorgood}. This figure shows the alignment of profile 40977 with 47600. The top panel shows the smoothed signature, while the bottom panel shows the doubly smoothed signatures used to compute the roughness correlation. Note that these two profiles do not match, yet the ccf is 0.7724. The roughness correlation (-0.0324) correctly indicates the lack of matching. The roughness correlation acts as a check against false positives which can arise when there are significant deformations in the overall structure, as in the case with both these profiles.
+
+```{r roughcorgood, echo=FALSE, fig.cap='Alignment of profile 40977 with 47600. The top panel shows the smoothed signature, while the bottom panel shows the doubly smoothed signatures used to compute the roughness correlation. Note that these two profiles do not match, yet the ccf is 0.7724. The roughness correlation (-0.0324) correctly indicates the lack of matching.'}
+br1 <- filter(bullets_smoothed, profile_id == 40977) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+br2 <- filter(bullets_smoothed, profile_id == 47600) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+
+res <- bulletGetMaxCMS(br1, br2, column = "l30", span = 5)
+
+prof1_zeroed <- br1 %>% 
+    mutate(y = y - min(y),
+           profile_id = factor(bullet))
+
+prof2_zeroed <- br2 %>%
+    mutate(y = y - min(y)) %>%
+    mutate(y = y + res$lag,
+           profile_id = factor(bullet))
+
+final_profs <- rbind(prof1_zeroed, prof2_zeroed)
+
+p1 <- ggplot(data = final_profs, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+doublesmoothed <- final_profs %>%
+    group_by(y) %>%
+    mutate(avgl30 = mean(l30, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(smoothavgl30 = smoothloess(x = y, y = avgl30, span = 0.3),
+           l50 = l30 - smoothavgl30)
+
+ys <- intersect(prof1_zeroed$y, prof2_zeroed$y)
+    
+final_doublesmoothed <- doublesmoothed %>%
+    filter(y %in% ys)
+
+p2 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l50, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+grid.arrange(p1, p2, nrow = 2)
+```
+
+## Model Training
 
 Using these features the randomForest [@randomForest] package, we can train a model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
 
@@ -294,7 +396,7 @@ result <- match_result %>%
     group_by(Result) %>%
     summarise(Count = mean(Count))
 
-print(xtable(result, digits = c(0, 0, 3), label = "tab:avgforest", caption = "The average confusion matrix for the 10 random forests. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
+print(xtable(result, digits = c(0, 0, 1), label = "tab:avgforest", caption = "The average confusion matrix for the 10 random forests. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
 
 These results suggest that our algorithm is a bit too conservative in predicting a match when in fact the bullets were fired from the same gun barrel. We can break down the confusion matrix depending on the study that each of the two lands originated from. Table \ref{tab:avgforeststudy} provides the average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average. This intuitively makes some sense given the presence of potential scanner operator effects, which we will address further in this section.
@@ -307,6 +409,8 @@ result <- match_result %>%
 
 print(xtable(result, digits = c(0, 0, 1, 1, 1, 1), label = "tab:avgforeststudy", caption = "The average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
+
+## Operator Effects
 
 We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds across different operators, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study since the Hamby data in both sets originated from the same gun barrels.
 
@@ -430,12 +534,24 @@ result <- dbReadTable(con, "metadata_derived") %>%
     dplyr::select(land_id, ideal_crosscut, study) %>%
     filter(!is.na(ideal_crosscut), study != "Cary")
 
-#ks.test(x = result$ideal_crosscut[result$study == "Hamby252"], y = result$ideal_crosscut[result$study == "Hamby44"])
-
 ggplot(result, aes(x = study, y = ideal_crosscut)) +
     geom_boxplot() +
     theme_bw() +
     ylim(c(0, 400)) +
     ggtitle("Distribution of Ideal Cross Section by Study")
 ```
+
+Indeed, another Kolmogorov-Smirnov test also confirms a significant difference in the distributions of these values. The result of this test is provided in Table \ref{tab:mykstest}. Because the difference is significant, it strongly suggests that the operator effect in the bullet scanning procedure must be taken into account in order to assume pairwise independence.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+mytest <- ks.test(x = result$ideal_crosscut[result$study == "Hamby252"], y = result$ideal_crosscut[result$study == "Hamby44"])
+
+print(xtable(tidy(mytest), digits = c(0, 4, 4, 0, 0), label = "tab:mykstest", caption = "Results for the Kolmogrov-Smirnov distributional test between values of the ideal cross section for Hamby252 compared with Hamby44."), comment = FALSE, include.rownames = FALSE)
+```
+
+# Conclusion
+
+In this paper, we have introduced and described a formal database housing raw bullet data, and the results of each processing stage of our bullet matching algorithm. Because this database is openly accessible, and all parameters are tracked, this allows for researchers to more easily use the results in order to iterate on components of the algorithm in hopes of improving the matching performance. To this end, we have also performed a case study feature analysis in which we used the derive pairwise features to train a model, strongly suggesting the presence of operator effects in the scanning process that must be accounted for.
+
+The way in which this should be accounted for is less clear, however. In the ideal case, bullets fired from a particular gun barrel should yield surface scans that are of identical quality and properties, regardless of the operator performing the scan. To achieve this, rigorous standards may need to be put in place with regards to the alignment of the bullet under the objective, and the procedure used to scan the bullet surface. Such procedures will require further investigation in order to lay out. For instance, due to the stark difference between the ideal cross section across two studies, procedures may need to dictate the margin from the edge of the objective at which the bullet can be placed.
 
