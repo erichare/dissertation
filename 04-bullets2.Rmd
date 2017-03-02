@@ -567,7 +567,7 @@ print(xtable(tidy(mytest), digits = c(0, 4, 4, 0, 0), label = "tab:mykstest", ca
 
 ## Degraded Bullets
 
-```{r, echo=FALSE, fig.cap='Histograms of matching probability, facetted by the degradation level.', fig.height=10}
+```{r, cache=FALSE, echo=FALSE, fig.cap='Histograms of matching probability, facetted by the degradation level.', fig.height=10}
 load("data/rtrees.RData")
 
 ccf <- dbReadTable(con, "ccf") %>% filter(compare_id >= 4)
@@ -581,7 +581,8 @@ CCFs_withlands_degrade <- ccf %>%
     left_join(dplyr::select(compares, compare_id, degrade_left, degrade_right), by = c("compare_id" = "compare_id")) %>%
     filter(study.x != "Cary", study.y != "Cary") %>%
     arrange(study.x, study.y) %>%
-    mutate(match = as.logical(replace(match, is.na(match), 0)))
+    mutate(match = as.logical(replace(match, is.na(match), 0)),
+           degrade_right = 1 - degrade_right)
 
 CCFs_withlands_degrade$forest <- predict(rtrees, newdata = CCFs_withlands_degrade, type = "prob")[,2]
 
@@ -599,20 +600,6 @@ grid.arrange(p1, p2, nrow = 2)
 
 ```{r, echo=FALSE}
 result <- CCFs_withlands_degrade %>%
-    filter(degrade_left == 0, match) %>%
-    select(profile1_id, profile2_id, forest, degrade_left, degrade_right) %>%
-    group_by(degrade_right) %>%
-    summarise(forest = mean(forest))
-
-ggplot(result, aes(x = degrade_right, y = forest)) +
-    geom_point() +
-    geom_line() +
-    theme_bw() +
-    ylim(c(0, 1))
-```
-
-```{r, echo=FALSE}
-result <- CCFs_withlands_degrade %>%
     filter(degrade_left == 0) %>%
     select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
     mutate(pred = (forest > .5)) %>%
@@ -621,21 +608,21 @@ result <- CCFs_withlands_degrade %>%
               specificity = mean(specificity(factor(pred), factor(match)))) %>%
     gather(key = metric, value = value, 3:ncol(.))
 
+## Produce plot
 ggplot(result, aes(x = degrade_right, y = value, colour = metric)) +
     geom_point() +
     geom_line() +
     theme_bw() +
     ylim(c(0, 1)) +
     xlim(c(0, 1)) +
-    xlab("Land Proportion (Left)")
+    xlab("Degraded Proportion (Left)")
 ```
 
 ```{r, echo=FALSE}
 result <- CCFs_withlands_degrade %>%
-    filter(degrade_right == 1) %>%
+    filter(degrade_right == 0) %>%
     select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
-    mutate(pred = (forest > .5),
-           degrade_left = 1 - degrade_left) %>%
+    mutate(pred = (forest > .5)) %>%
     group_by(degrade_left, degrade_right) %>%
     summarise(sensitivity = mean(sensitivity(factor(pred), factor(match))),
               specificity = mean(specificity(factor(pred), factor(match)))) %>%
@@ -647,7 +634,7 @@ ggplot(result, aes(x = degrade_left, y = value, colour = metric)) +
     theme_bw() +
     ylim(c(0, 1)) +
     xlim(c(0, 1)) +
-    xlab("Land Proportion (Right)")
+    xlab("Degraded Proportion (Right)")
 ```
 
 ## From Lands to Bullets
@@ -655,7 +642,6 @@ ggplot(result, aes(x = degrade_left, y = value, colour = metric)) +
 One other area deserving further exploration is generalizing these algorithms for matching full bullets rather than indvidual lands, as would be done in a criminal justice application. One such approach is to recognize that (at least for the Hamby bullets) there should be six matching pairs of lands for any two bullets that were fired from the same gun barrel. Therefore, for each pair of bullets, we can extract the six highest matching probabilities and average them. If we do so, we obtain a clear separation as seen in Figure \ref{fig:firstscore}. No known-matches have a score below 50%, while all known non-matches have a score below 10%.
 
 ```{r firstscore, echo=FALSE, fig.cap='Score distributions for the naive approach to bullet matching, for known matches and known non-matches.'}
-load("data/rtrees.RData")
 CCFs_withlands$forest <- predict(rtrees, newdata = CCFs_withlands, type = "prob")[,2]
 
 result <- CCFs_withlands %>%
