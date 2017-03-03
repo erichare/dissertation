@@ -359,7 +359,7 @@ con <- dbConnect(MySQL(), user = user, password = password,
                  dbname = dbname, host = host)
 
 all_bullets_metadata <- dbReadTable(con, "metadata")
-my_matches <- dbReadTable(con, "matches")
+my_matches <- dbReadTable(con, "matches") %>% mutate(match = 1)
 profiles <- dbReadTable(con, "profiles")
 ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == 4)
 
@@ -565,9 +565,13 @@ mytest <- ks.test(x = result$ideal_crosscut[result$study == "Hamby252"], y = res
 print(xtable(tidy(mytest), digits = c(0, 4, 4, 0, 0), label = "tab:mykstest", caption = "Results for the Kolmogrov-Smirnov distributional test between values of the ideal cross section for Hamby252 compared with Hamby44."), comment = FALSE, include.rownames = FALSE)
 ```
 
-## Degraded Bullets
+## Degraded Lands
 
-```{r, cache=FALSE, echo=FALSE, fig.cap='Histograms of matching probability, facetted by the degradation level.', fig.height=10}
+We now turn our attention to matching degraded bullet lands, in which only fragments of the land can be recovered. Because the NIST database currently contains only full bullet lands, this will involve performing a simulation and making some simplifying assumptions. We will simulate various levels of degradation from the left, right, and middle of the land. We will use degradation levels of $0$, $\frac{1}{16}$, $\frac{1}{8}$, $\frac{1}{4}$, $\frac{1}{2}$, and $\frac{3}{4}$ where each fraction represents the proportion of the land that is missing (i.e., a degradation level of $\frac{1}{4}$ implies that only 75% of the land was recoverable.) We will do this by subsetting the signatures. Note that this is a bit of a simplification because the signatures themselves are somewhat dependent on the data that is missing because of the properties of the LOESS smoother.
+
+Figure \ref{fig:deghist} provides histograms of the matching probability facetted by the degradation level and known match versus known non-match. The matching probabilities suffer compared with the full lands in all cases, but the change is much less for different levels of right degradation - In other words, if we degrade the right side of the land and maintain portions of the left side, the algorithm is better able to provide matching probabilities that accurately reflect the true state of nature.
+
+```{r deghist, cache=FALSE, echo=FALSE, fig.cap='Histograms of matching probability, facetted by the degradation level and known match versus known non-match.', fig.height=9, fig.width=8}
 load("data/rtrees.RData")
 
 ccf <- dbReadTable(con, "ccf") %>% filter(compare_id >= 4)
@@ -585,20 +589,28 @@ CCFs_withlands_degrade <- ccf %>%
            degrade_right = 1 - degrade_right)
 
 CCFs_withlands_degrade$forest <- predict(rtrees, newdata = CCFs_withlands_degrade, type = "prob")[,2]
+CCFs_withlands_plot <- CCFs_withlands_degrade
+CCFs_withlands_plot$match <- factor(CCFs_withlands_plot$match, labels = c("Known Non-Match", "Known Match"))
 
-p1 <- ggplot(data = filter(CCFs_withlands_degrade, match), aes(x = forest)) +
+p1 <- ggplot(data = filter(CCFs_withlands_plot, degrade_left == 0), aes(x = forest)) +
     geom_histogram() +
-    facet_grid(degrade_left ~ degrade_right, labeller = label_both, scales = "free_y") +
+    facet_grid(match~degrade_right, scales = "free_y") +
     theme_bw()
-p2 <- ggplot(data = filter(CCFs_withlands_degrade, !match), aes(x = forest)) +
+p2 <- ggplot(data = filter(CCFs_withlands_plot, degrade_right == 0), aes(x = forest)) +
     geom_histogram() +
-    facet_grid(degrade_left ~ degrade_right, labeller = label_both, scales = "free_y") +
+    facet_grid(match~degrade_left, scales = "free_y") +
+    theme_bw()
+p3 <- ggplot(data = filter(CCFs_withlands_plot, (degrade_left == 0 & degrade_right == 0) | (degrade_right != 0 & degrade_left != 0)), aes(x = forest)) +
+    geom_histogram() +
+    facet_grid(match~degrade_left+degrade_right, scales = "free_y") +
     theme_bw()
 
-grid.arrange(p1, p2, nrow = 2)
+grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-```{r, echo=FALSE}
+Figure \ref{fig:senspe} gives the sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep.
+
+```{r senspe, echo=FALSE, fig.height=9, fig.width=8, fig.cap='Sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep.'}
 result <- CCFs_withlands_degrade %>%
     filter(degrade_left == 0) %>%
     select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
@@ -609,16 +621,14 @@ result <- CCFs_withlands_degrade %>%
     gather(key = metric, value = value, 3:ncol(.))
 
 ## Produce plot
-ggplot(result, aes(x = degrade_right, y = value, colour = metric)) +
+p1 <- ggplot(result, aes(x = degrade_right, y = value, colour = metric)) +
     geom_point() +
     geom_line() +
     theme_bw() +
     ylim(c(0, 1)) +
     xlim(c(0, 1)) +
-    xlab("Degraded Proportion (Left)")
-```
+    xlab("Degraded Proportion (Right)")
 
-```{r, echo=FALSE}
 result <- CCFs_withlands_degrade %>%
     filter(degrade_right == 0) %>%
     select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
@@ -628,13 +638,32 @@ result <- CCFs_withlands_degrade %>%
               specificity = mean(specificity(factor(pred), factor(match)))) %>%
     gather(key = metric, value = value, 3:ncol(.))
 
-ggplot(result, aes(x = degrade_left, y = value, colour = metric)) +
+p2 <- ggplot(result, aes(x = degrade_left, y = value, colour = metric)) +
     geom_point() +
     geom_line() +
     theme_bw() +
     ylim(c(0, 1)) +
     xlim(c(0, 1)) +
-    xlab("Degraded Proportion (Right)")
+    xlab("Degraded Proportion (Left)")
+
+result <- CCFs_withlands_degrade %>%
+    filter((degrade_left == 0 & degrade_right == 0) | (degrade_right != 0 & degrade_left != 0)) %>%
+    select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
+    mutate(pred = (forest > .5)) %>%
+    group_by(degrade_left, degrade_right) %>%
+    summarise(sensitivity = mean(sensitivity(factor(pred), factor(match))),
+              specificity = mean(specificity(factor(pred), factor(match)))) %>%
+    gather(key = metric, value = value, 3:ncol(.))
+
+p3 <- ggplot(result, aes(x = degrade_left + degrade_right, y = value, colour = metric)) +
+    geom_point() +
+    geom_line() +
+    theme_bw() +
+    ylim(c(0, 1)) +
+    xlim(c(0, 1)) +
+    xlab("Degraded Proportion (Both)")
+
+grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
 ## From Lands to Bullets
