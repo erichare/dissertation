@@ -14,6 +14,19 @@ Bullet matching is a process used to determine whether two bullets have been fir
 \newpage
 
 ```{r, echo=FALSE, message=FALSE, cache=FALSE}
+## TODO: put actual and predicted in the tables in ch 3
+## switch to scientific notation (or < .0001) for all p-values
+## move the KS test table to the appendix for that one paper
+## Switch single ks test to a parenthetical in the text
+## Facet by sensitivity and specificity, 3 lines for each
+## Start that plot at 100%, label it "% land used" - call it "left fixed", "middle fixed", "right fixed"
+## Move histograms to the appendix
+## Try without signature length?
+## Take plot out of first land to land idea
+## Feature expression as a function of degradation
+## Take a scratched bullet we excluded, (BR9 b24?) and try to match using degraded
+## Cary data - same pics as Alan
+
 library(xtable)
 library(RMySQL)
 library(tidyverse)
@@ -228,7 +241,7 @@ We can now train the forest using the previously defined features. We split the 
 includes <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
                                          "study.x", "study.y", "barrel.x", "barrel.y",
                                          "bullet.x", "bullet.y", "land.x", "land.y",
-                                         "land_id.x", "land_id.y"))
+                                         "land_id.x", "land_id.y", "signature_length"))
 
 set.seed(20170222)
 trainIndex <- createDataPartition(1:nrow(CCFs_withlands), p = 0.8, list = TRUE, times = 10)
@@ -289,7 +302,7 @@ We can attempt to quantify the effect of the study on the matching probability b
 includes_study <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
                                          "barrel.x", "barrel.y", "match",
                                          "bullet.x", "bullet.y", "land.x", "land.y",
-                                         "land_id.x", "land_id.y", "study.x", "study.y"))
+                                         "land_id.x", "land_id.y", "study.x", "study.y", "signature_length"))
 
 result_study <- trainIndex %>% purrr::map_df(function(index) {
     CCFs_train <- CCFs_withlands[index,]
@@ -431,7 +444,7 @@ CCFs_withlands_degrade <- ccf %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.x" = "land_id")) %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
     left_join(dplyr::select(compares, compare_id, degrade_left, degrade_right), by = c("compare_id" = "compare_id")) %>%
-    filter(study.x != "Cary", study.y != "Cary") %>%
+    filter(study.x != "Cary", study.y != "Cary", degrade_right - degrade_left >= .5) %>%
     arrange(study.x, study.y) %>%
     mutate(match = as.logical(replace(match, is.na(match), 0)),
            degrade_right = 1 - degrade_right)
@@ -461,7 +474,7 @@ Figure \ref{fig:senspe} gives the sensitivity and specificity of the random fore
 ```{r senspe, echo=FALSE, fig.height=9, fig.width=8, fig.cap='Sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep.'}
 result <- CCFs_withlands_degrade %>%
     filter(degrade_left == 0) %>%
-    select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
+    dplyr::select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
     mutate(pred = (forest > .5)) %>%
     group_by(degrade_left, degrade_right) %>%
     summarise(sensitivity = mean(sensitivity(factor(pred), factor(match))),
@@ -479,7 +492,7 @@ p1 <- ggplot(result, aes(x = degrade_right, y = value, colour = metric)) +
 
 result <- CCFs_withlands_degrade %>%
     filter(degrade_right == 0) %>%
-    select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
+    dplyr::select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
     mutate(pred = (forest > .5)) %>%
     group_by(degrade_left, degrade_right) %>%
     summarise(sensitivity = mean(sensitivity(factor(pred), factor(match))),
@@ -496,7 +509,7 @@ p2 <- ggplot(result, aes(x = degrade_left, y = value, colour = metric)) +
 
 result <- CCFs_withlands_degrade %>%
     filter((degrade_left == 0 & degrade_right == 0) | (degrade_right != 0 & degrade_left != 0)) %>%
-    select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
+    dplyr::select(profile1_id, profile2_id, forest, match, degrade_left, degrade_right) %>%
     mutate(pred = (forest > .5)) %>%
     group_by(degrade_left, degrade_right) %>%
     summarise(sensitivity = mean(sensitivity(factor(pred), factor(match))),
@@ -512,6 +525,24 @@ p3 <- ggplot(result, aes(x = degrade_left + degrade_right, y = value, colour = m
     xlab("Degraded Proportion (Both)")
 
 grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+```{r, echo=FALSE}
+feature_exp <- CCFs_withlands_degrade %>%
+    filter(match) %>%
+    dplyr::select(degrade_left, degrade_right, ccf, rough_cor, overlap, D, sd_D, matches, mismatches, cms, non_cms, sum_peaks) %>%
+    gather(key = feature, value = value, 3:ncol(.)) %>%
+    group_by(degrade_left, degrade_right, feature) %>%
+    summarise(value = mean(value, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(fixed = ifelse(degrade_left == 0 & degrade_right == 0, "left", ifelse(degrade_left == 0, "left", ifelse(degrade_right == 0, "right", "middle"))),
+           level = degrade_left + degrade_right)
+
+ggplot(data = feature_exp, aes(x = level, y = value, colour = fixed)) +
+    geom_point() +
+    geom_line() +
+    theme_bw() +
+    facet_wrap(~feature, scales = "free_y")
 ```
 
 # From Lands to Bullets
