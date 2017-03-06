@@ -1,4 +1,4 @@
-\chapter{A MODERN BULLET MATCHING APPLICATION}
+\chapter{BULLET LAND FEATURE ANALYSIS}
 
 \begin{center}
 
@@ -9,36 +9,11 @@ Eric Hare, Heike Hofmann, Alicia Carriquiry
 
 \end{center}
 
-Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by describing a database structure which tracks every parameter used, and allows for the seamless replication of results by researchers, adding a layer of reproducibility to the bullet matching process. Finally, we describe a front-end web application which utilizes the algorithms and the database to allow bullet matching to be done more efficiently.
+Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by formalizing and defining a set of features, computed on pairs of bullet lands, which can be used in machine learning models to assess the probability of a match. We then use these features to perform an analysis of the two Hamby bullet sets (Set 252 and Set 44), to assess the presence of microscope operator effects in scanning. We also take some first steps to addressing the issue of degraded bullet lands, and provide a range of degradation at which the matching algorithm still performs well. Finally, we discuss generalizing land to land comparisons to full bullet comparisons.
 
 \newpage
 
-# Background
-
-The need for advancements in terms of scientific objectivity and reproducibility of forensic methods is well known. Note, for example, the recent report by the President's Council of Advisors on Science on Technology (PCAST) [@pcast2016]. The report references a number of areas of common practice in the field in which subjectivity is far too common, including but not limited to fingerprint analysis, bitemark analysis and firearms analysis.
-
-Work has been done to address these concerns and add objectivity to these procedures. In the case of firearms analysis, the focus of this paper, some examples include @vorburger:2011, @thompson:2013, and @riva:2014. Our own work, "Automatic Matching of Bullet Lands", describes procedures used to produce an estimate of the probability of a match between two bullet lands. It does so by deriving a number of features, some from the literature and some original, and computing these features on pairs of reference bullets from the NIST Ballistics Toolmark Research Database (NBTRD). The algorithms used are published as open-source R code available in the package `bulletr` [@bulletr]. In spite of these steps towards transparency, however, the process of duplicated and assessing the performance of the algorithm in hopes of improving predictive accuracy was cumbersome in a number of ways:
-
-1. Doing so requires specialized statistical software (specifically, R and associated R packages)
-2. Computing statistics on all pairs of bullet lands is a time consuming process even on high-powered machines (on the order of several days)
-3. Updates to our `bulletr` package, or any package dependencies of `bulletr`, may change the results such that our findings are not completely reproducible even if each step is correctly followed
-
-In this paper, we add a new layer of reproducibility to the algorithms to allow for forensic scientists, statisticians, and other interested researchers to duplicate and iterate on the results in a seamless fashion. We do so by introducing a new database structure that supplements the NIST database by storing all necessary parameters and intermediate results needed to arrive at a matching probability between two bullet lands. We describe the structure from a technical perspective, and then describe the front-end and back-end application structure which utilizes the database to provide results to the researchers. Finally, we provide a case study analysis on features of bullet land pairs as an example of the capabiilities of this structure when it is leveraged.
-
-# Database Structure
-
-Figure \ref{fig:database_schema} displays the database schema along with links between the relevant id columns. This structure provides the necessary links between the raw input data, and the processed signatures used to compute features and ultimately provide matching probabilities between pairs of lands. This diagram will be explained in depth in this section.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\linewidth]{images/schema.png}
-\caption{A schematic of the database.}
-\label{fig:database_schema}
-\end{figure}
-
-We can connect to the database using the `dplyr` package.
-
-```{r, message=FALSE, cache=FALSE}
+```{r, echo=FALSE, message=FALSE, cache=FALSE}
 library(xtable)
 library(RMySQL)
 library(tidyverse)
@@ -56,145 +31,16 @@ host <- "50.81.214.252"
 port <- 3306
 
 my_db <- src_mysql(dbname, host, port, user, password)
-```
-
-The remainder of this section will walk through the most relevant database tables, and include reproducible R code for accessing, parsing, and displaying the data.
-
-## Data
-
-The data table is essentially a mirror of the bullets stored in the NBTRD. It currently includes a long-form version of the two Hamby bullet sets (Set 252 and Set 44) [@hamby:2009] and the Cary Persistence study [@cary]. A sample of 20 rows of this table can be seen in Table \ref{tab:data}. The land id column identifies the bullet land under consideration. The x coordinate is the location along the shorter axis, while the y coordinate is along the longer axis. The value column represents the height of the bullet at that particular location.
-
-```{r}
-my_data <- tbl(my_db, "data")
-
-# Get Hamby Barrel 1 Bullet 1 Land 3
-result <- my_data %>% 
-    filter(land_id == 39, !is.na(value)) %>%
-    arrange(x, y) %>%
-    head(n = 20) %>%
-    as.data.frame
-```
-
-```{r, echo=FALSE, message=FALSE, results='asis'}
-print(xtable(result, digits = c(0, 0, 0, 0, 2, 2), label = "tab:data", caption = "A sample of 20 rows of the data table. The land id column identifies the bullet land under consideration. The x coordinate is the location along the shorter axis, while the y coordinate is along the longer axis. The value column represents the height of the bullet at that particular location."), comment = FALSE)
-```
-
-In comparison to a regular x3p file, this data table is less space efficient. An x3p file uses a surface matrix of dimension $(x, y)$ where the value of each $(x_i, y_j)$ is the height of the bullet at $x = i$ and $y = j$. Our expanded version of the format turns each cell into a single row $x_i, y_j, z_{ij}$. Where $z_{ij}$ where $z_{ij}$ is the height of the bullet at $x = i$, $y = j$. Thus, for a bullet with 500 $x$ values and 1572 $y$ values (as in land id 39), an x3p file uses a matrix of size 786000, while we use a data frame of 786000 rows and 3 columns, storing $3x$ as much information. While certainly less space efficient, the format allows for easy querying of specific lands or specific profiles from the database.
-
-## Metadata
-
-As shown in Table \ref{tab:metadata}, the metadata table includes one row for each unique bullet land. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers). Note that this table includes parameters that are derived solely from the properties of the data itself. Hence, the previous data table in conjunction with metadata forms the information needed to generate x3p files. Conversely, x3p files can be used to regenerate the data contained in both these tables.
-
-```{r}
 my_metadata <- tbl(my_db, "metadata")
-
-result <- my_metadata %>% 
-    filter(land_id >= 61, land_id <= 72) %>%
-    as.data.frame
-```
-
-```{r, echo=FALSE, results='asis'}
-print(xtable(result[,1:7], digits = c(0, 0, 0, 0, 0, 0, 0, 0), label = "tab:metadata", caption = "A sample of 12 rows of the metadata table. The land id column identifies the bullet land under consideration. The name of the bullet is derived from the file path, as provided by the NBTRD. Several other parameters are given, including the number of profiles, (x values), number of observations per profile (y values), and the increments of each in micrometers. (in this case, one x unit is equivalent to 1.5625 micrometers)"), comment = FALSE, include.rownames = FALSE)
-```
-
-## Metadata Derived
-
-Similarly to the metadata table, the metadata_derived table (Sampled in Table \ref{tab:metadata_derived}) includes one row per bullet land. The difference is that the columns of this table were derived by our algorithm rather than properties of the data. The run_id, which will be discussed in more depth later, indicates the algorithm run that yielded the following derived parameters.
-
-```{r}
 my_metadata_derived <- tbl(my_db, "metadata_derived")
-
-result <- my_metadata_derived %>% 
-    filter(land_id >= 61, land_id <= 72) %>%
-    as.data.frame
-```
-
-```{r, echo=FALSE, results='asis'}
-print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 0, 0), label = "tab:metadata_derived", caption = "A sample of 12 rows of the metadata\\_derived table. Once again, a land id identifies a particular bullet land. The run id, which will be discussed in more depth later, indicates the algorithm run that yielded the following derived parameters."), comment = FALSE, include.rownames = FALSE)
-```
-
-A number of derived parameters are given for a particular land and a particular run:
-
-1. **ideal_crosscut** - The location of the ideal cross section (or ideal x coordinate) at which to extract a profile, as given by Hare, Hofmann, Carriquiry (2017).
-2. **left_twist** - The calculated twist of the scan as determined by the left shoulder.
-3. **right_twist** - The calculated twist of the scan as determined by the right shoulder.
-4. **left_sample** - The number of samples used to compute the left twist.
-5. **right_sample** - The number of samples used to compute the right twist.
-
-## Profiles
-
-Table \ref{tab:profiles} displays 10 profiles from land id 39, using the first 20 x coordinate values. Profiles are defined by properties of the grooves or shoulders. Hence, given this information, we can post-process the data table to extract particular profiles. For instance, we can use profile_id 32448, which is the profile obtained by extracting at x = 100 for land_id 39. Using properties of the grooves as determined by our algorithm, we can extract the the profile with the shoulders and grooves removed.
-
-```{r}
 my_profiles <- tbl(my_db, "profiles")
-
-result <- my_profiles %>% 
-    filter(land_id == 39, x > 92, x < 107) %>%
-    select(-groove_left_pred, -groove_right_pred) %>%
-    as.data.frame
-```
-
-```{r, echo=FALSE, results='asis'}
-print(xtable(result, digits = c(0, 0, 0, 0, 2, 2, 2), label = "tab:profiles", caption = "A sample of 10 rows of the profiles table. A profile id is uniquely identified by a land id, a run id, and an x value."), comment = FALSE, include.rownames = FALSE)
-```
-
-Figure \ref{fig:prof} displays the profile obtained by extracting land id 39 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.
-
-```{r prof, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The profile obtained by extracting land id 39 at x = 100. Dashed vertical lines indicate the location of the shoulders. Within the bounds of the dashed line, the profiles that are relevant for bullet matching are obtained.'}
-myprof <- filter(result, x == 100)
-
-land39 <- my_data %>% 
-    filter(land_id == 39, x == 100) %>%
-    as.data.frame
-
-ggplot(data = land39, aes(x = y, y = value)) +
-    geom_line() +
-    geom_vline(xintercept = myprof$groove_left, linetype = 2) +
-    geom_vline(xintercept = myprof$groove_right, linetype = 2) +
-    theme_bw()
-```
-
-## Signatures
-
-The land signature represents the processed data that is ultimately used for matching. In our case, a land signature represents the smoothed and processed residuals obtained from fitting a Locally Weighted Scatterplot Smoothing Regression (LOESS) to the profiles from above. Figure \ref{fig:sigs} displays the signature obtained by processing the profile of land id 39 at x = 100. It can be seen that the signature represents an attempt at reducing a bullet land to the peaks and valleys that represent striations, by removing the global structure of the bullet that dominates the view of the profile.
-
-```{r sigs, message=FALSE, warning=FALSE, fig.height=3, fig.width=6, fig.cap='The signature obtained by processing the profile of land id 39 at x = 100.'}
 my_signatures <- tbl(my_db, "signatures")
-
-result <- my_signatures %>% 
-    filter(profile_id == myprof$profile_id, run_id == 1) %>%
-    as.data.frame
-
-ggplot(data = result, aes(x = y, y = l30)) +
-    geom_line() +
-    theme_bw()
-```
-
-## CCF
-
-The CCF table contains features computed on cross-comparisons between different signatures. The name is a bit of a misnomer; the ccf, or cross-correlation function, is only one of the features.  Table \ref{tab:ccf} displays a subset of the derived features for a comparison of the derived profile for land id 39, from above, with six other land profiles. This land's known match is the fourth row in the table, and the features immediately stand out as more pronounced, including a ccf above 90% and a number of matches far exceeding the other comparisons.
-
-```{r}
 my_ccf <- tbl(my_db, "ccf")
-
-result <- my_ccf %>% 
-    filter(profile1_id == myprof$profile_id, 
-           compare_id == 4) %>%
-    select(profile1_id, profile2_id, ccf, rough_cor, D, overlap, matches, cms, sum_peaks) %>%
-    collect() %>%
-    slice(5:10) %>%
-    as.data.frame
 ```
 
-```{r, echo=FALSE, results='asis'}
-print(xtable(result, digits = c(0, 0, 0, 3, 3, 3, 3, 3, 3, 3), label = "tab:ccf", caption = "A subset of the derived features for a comparison of the derived profile for land id 39, from above, with six other land profiles. This land's known match is the fourth row in the table, and the features immediately stand out as more pronounced, including a ccf above .9 and a number of matches far exceeding the other comparisons."), comment = FALSE, include.rownames = FALSE)
-```
+# Background
 
-# Case Study: Feature Analysis
-
-With the database structure defined, we turn our attention to using the database to perform a feature analysis using the bullets provided in the NBTRD. The modular structure of the database allows us to extract pre-derived features without performing the intermediate computations, which in turn allows for easier in depth exploration.
-
-## Feature Standardization
+# Feature Standardization
 
 To start, we introduce each feature provided in the CCF database table. Table \ref{tab:ccf1} provides the first eight columns of the CCF table, and Table \ref{tab:ccf2} provides the remaining seven columns.
 
@@ -350,7 +196,7 @@ p3 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l50, colour = profile_i
 grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-## Model Training
+# Model Training
 
 Using these features the randomForest [@randomForest] package, we can train a model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
 
@@ -432,6 +278,8 @@ result_wide_row[,-1] <- t(apply(result_wide_row[,-1], 1, function(x) paste0(roun
 
 print(xtable(result_wide_row, label = "tab:avgforeststudy", caption = "The average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
+
+# Feature Robustness
 
 ## Operator Effects
 
@@ -666,7 +514,7 @@ p3 <- ggplot(result, aes(x = degrade_left + degrade_right, y = value, colour = m
 grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-## From Lands to Bullets
+# From Lands to Bullets
 
 One other area deserving further exploration is generalizing these algorithms for matching full bullets rather than indvidual lands, as would be done in a criminal justice application. One such approach is to recognize that (at least for the Hamby bullets) there should be six matching pairs of lands for any two bullets that were fired from the same gun barrel. Therefore, for each pair of bullets, we can extract the six highest matching probabilities and average them. If we do so, we obtain a clear separation as seen in Figure \ref{fig:firstscore}. No known-matches have a score below 50%, while all known non-matches have a score below 10%.
 
@@ -733,6 +581,8 @@ ggplot(data = test2, aes(x = match, y = score)) +
 
 # Conclusion
 
-In this paper, we have introduced and described a formal database housing raw bullet data, and the results of each processing stage of our bullet matching algorithm. Because this database is openly accessible, and all parameters are tracked, this allows for researchers to more easily use the results in order to iterate on components of the algorithm in hopes of improving the matching performance. To this end, we have also performed a case study feature analysis in which we used the derive pairwise features to train a model, strongly suggesting the presence of operator effects in the scanning process that must be accounted for.
+In this paper, we have introduced a set of robust features which can be used to train bullet matching models. We've used these features to train a random forest and assess its accuracy. In doing so, we noted strong evidence of operator effects being present in terms of the differences in the microscope scans. 
 
-The way in which this should be accounted for is less clear, however. In the ideal case, bullets fired from a particular gun barrel should yield surface scans that are of identical quality and properties, regardless of the operator performing the scan. To achieve this, rigorous standards may need to be put in place with regards to the alignment of the bullet under the objective, and the procedure used to scan the bullet surface. Such procedures will require further investigation in order to lay out. For instance, due to the stark difference between the ideal cross section across two studies, procedures may need to dictate the margin from the edge of the objective at which the bullet can be placed.
+While these effects were clear, the way in which this should be accounted for is less clear, however. In the ideal case, bullets fired from a particular gun barrel should yield surface scans that are of identical quality and properties, regardless of the operator performing the scan. To achieve this, rigorous standards may need to be put in place with regards to the alignment of the bullet under the objective, and the procedure used to scan the bullet surface. Such procedures will require further investigation in order to lay out. For instance, due to the stark difference between the ideal cross section across two studies, procedures may need to dictate the margin from the edge of the objective at which the bullet can be placed.
+
+Some first steps towards addressing the issue of degraded bullet lands was also taken. As suspected, the algorithm performance declines as a function of the amount of degradation. However, depending on the location of the degradation, this effect differs. Among the known bullet matches, if the left hand portion of the Hamby bullet signatures remains in tact and we degrade the right hand side, the matching performance is far less impacted than if other portions of the land are degraded.
