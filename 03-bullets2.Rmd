@@ -282,6 +282,8 @@ match_result_wide <- match_result %>%
 result <- match_result %>%
     group_by(Result) %>%
     summarise(Count = mean(Count))
+sens_result <- result$Count[result$Result == "True Positive"] / (result$Count[result$Result == "True Positive"] + result$Count[result$Result == "False Negative"])
+spec_result <- result$Count[result$Result == "True Negative"] / (result$Count[result$Result == "True Negative"] + result$Count[result$Result == "False Positive"])
 
 print(xtable(result, digits = c(0, 0, 1), label = "tab:avgforest", caption = "The average confusion matrix for the 10 random forests. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
 ```
@@ -415,7 +417,7 @@ CCFs_withlands_degrade <- ccf %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.x" = "land_id")) %>%
     left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
     left_join(dplyr::select(compares, compare_id, degrade_left, degrade_right), by = c("compare_id" = "compare_id")) %>%
-    filter(study.x != "Cary", study.y != "Cary", degrade_right - degrade_left >= .5) %>%
+    filter(study.x != "Cary", study.y != "Cary") %>%
     arrange(study.x, study.y) %>%
     mutate(match = as.logical(replace(match, is.na(match), 0)),
            degrade_right = 1 - degrade_right)
@@ -434,9 +436,11 @@ result <- CCFs_withlands_degrade %>%
     dplyr::select(profile1_id, profile2_id, forest, match, fixed, level) %>%
     mutate(pred = (forest > .5)) %>%
     group_by(fixed, level) %>%
-    summarise(sensitivity = mean(sensitivity(factor(pred), factor(match))),
-              specificity = mean(specificity(factor(pred), factor(match)))) %>%
-    gather(key = metric, value = value, 3:4)
+    summarise(sensitivity = mean(sensitivity(factor(!pred), factor(!match))),
+              specificity = mean(specificity(factor(!pred), factor(!match)))) %>%
+    gather(key = metric, value = value, 3:4) %>%
+    arrange(fixed, level)
+result$value[1:2] <- c(sens_result, spec_result)
 
 ## Produce plot
 ggplot(result, aes(x = level, y = value, colour = fixed)) +
@@ -444,7 +448,7 @@ ggplot(result, aes(x = level, y = value, colour = fixed)) +
     geom_point() +
     geom_line() +
     theme_bw() +
-    scale_x_continuous(breaks = c(0, .125, .25, .375, .5), labels = c("100%", "87.5%", "75%", "62.5%", "50%")) +
+    scale_x_continuous(breaks = c(0, .125, .25, .375, .5, .625, .75), labels = c("100%", "87.5%", "75%", "62.5%", "50%", "37.5%", "25%")) +
     xlab("Land Proportion")
 ```
 
