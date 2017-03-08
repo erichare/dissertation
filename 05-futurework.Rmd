@@ -1,3 +1,6 @@
 \chapter{FUTURE WORK}
 
-TBD
+- Parameter tuning and optimization
+- True degraded data including multiple pieces of a land
+- Controlling for operator effects
+- More optimized comparison viewer (plotly)

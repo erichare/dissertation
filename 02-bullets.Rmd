@@ -1482,13 +1482,12 @@ labels <- aligned %>% group_by(bulletland) %>% summarize(
 labels <- labels %>% group_by(barrel, land) %>% mutate(id=order(bulletland))
 ```
 
-\begin{landscape}
 \begin{figure}[hbtp]
-```{r aligned-first, dependson='aligned', echo=FALSE, warning=FALSE, fig.width=15, fig.height=10, out.width='7.5in'}
+```{r aligned-first, dependson='aligned', echo=FALSE, warning=FALSE, fig.width=10, fig.height=15, out.width='7.5in'}
 qplot(x=y, y=l30, data=subset(aligned, barrel <=5), 
       geom="line", group=bullet, colour=bullet) + 
   ylim(c(-7,7)) + xlab("") + ylab("") + xlim(c(0,3000)) +
-  facet_grid(facets=barrel~land, labeller="label_both") + theme_bw() +
+  facet_grid(facets=land~barrel, labeller="label_both") + theme_bw() +
   theme(plot.margin=unit(c(0,0,-1,-1), unit="line"), legend.position="none") + 
   geom_label(aes(y=2.5*(id-3), label=label, colour=bullet), 
              x = 3000, data=subset(labels, barrel <= 5), 
@@ -1500,11 +1499,11 @@ qplot(x=y, y=l30, data=subset(aligned, barrel <=5),
 \end{figure}
 
 \begin{figure}[hbtp]
-```{r aligned-second, dependson='aligned', echo=FALSE, warning=FALSE, fig.width=15, fig.height=10, out.width='7.5in'}
+```{r aligned-second, dependson='aligned', echo=FALSE, warning=FALSE, fig.width=10, fig.height=15, out.width='7.5in'}
 qplot(x=y, y=l30, data=subset(aligned, barrel > 5), 
       geom="line", group=bullet, colour=bullet) + 
   ylim(c(-7,7)) + xlab("") + ylab("") + xlim(c(0,3000)) +
-  facet_grid(facets=barrel~land, labeller="label_both") + theme_bw() +
+  facet_grid(facets=land~barrel, labeller="label_both") + theme_bw() +
   theme(plot.margin=unit(c(0,0,-1,-1), unit="line"), legend.position="none") + 
   geom_label(aes(y=2.5*(id-3), label=label, colour=bullet), 
              x = 3000, data=subset(labels, barrel > 5), 
@@ -1513,7 +1512,6 @@ qplot(x=y, y=l30, data=subset(aligned, barrel > 5),
 ```
 \caption{\label{fig:aligned-second}Overview of aligned signatures for all bullet lands for  barrels 5 to 10 of the Hamby study.}
 \end{figure}
-\end{landscape}
 
 ## Table of Feature Importance
 
