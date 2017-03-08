@@ -1,2 +1,2 @@
-rmd_files: ["index.Rmd", "01-introduction.Rmd", "02-intRo.Rmd", "03-bullets.Rmd", "04-bullets2.Rmd", "05-futurework.Rmd", "06-bibliography.Rmd"]
+rmd_files: ["index.Rmd", "01-introduction.Rmd", "02-bullets.Rmd", "03-bullets2.Rmd", "04-bullets3.Rmd", "05-futurework.Rmd", "06-bibliography.Rmd"]
 book_filename: "dissertation.Rmd"

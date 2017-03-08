@@ -1,0 +1,779 @@
+\chapter{BULLET LAND FEATURE ANALYSIS}
+
+\begin{center}
+
+A paper to be submitted to the \textbf{Journal of Forensic Science}. \\
+Eric Hare, Heike Hofmann, Alicia Carriquiry
+
+\textbf{Abstract}
+
+\end{center}
+
+Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by formalizing and defining a set of features, computed on pairs of bullet lands, which can be used in machine learning models to assess the probability of a match. We then use these features to perform an analysis of the two Hamby bullet sets (Set 252 and Set 44), to assess the presence of microscope operator effects in scanning. We also take some first steps to addressing the issue of degraded bullet lands, and provide a range of degradation at which the matching algorithm still performs well. Finally, we discuss generalizing land to land comparisons to full bullet comparisons.
+
+\newpage
+
+```{r, echo=FALSE, message=FALSE, cache=FALSE}
+## DONE put actual and predicted in the tables in ch 3
+## DONE switch to scientific notation (or < .0001) for all p-values
+## DONE move the KS test table to the appendix for that one paper
+## DONE Switch single ks test to a parenthetical in the text
+## DONE Facet by sensitivity and specificity, 3 lines for each
+## DONE Start that plot at 100%, label it "% land used" - call it "left fixed", "middle fixed", "right fixed"
+## DONE Move histograms to the appendix
+## DONE Try without signature length?
+## DONE Take plot out of first land to land idea
+## DONE Feature expression as a function of degradation
+## DONE Take a scratched bullet we excluded, (BR9 b24?) and try to match using degraded
+## Cary data - same pics as Alan
+
+library(xtable)
+library(RMySQL)
+library(tidyverse)
+library(bulletr)
+library(gridExtra)
+library(randomForest)
+library(caret)
+library(broom)
+library(matrixcalc)
+
+dbname <- "bullets"
+user <- "buser"
+password <- readLines("buser_pass.txt")
+host <- "50.81.214.252"
+port <- 3306
+
+my_db <- src_mysql(dbname, host, port, user, password)
+my_metadata <- tbl(my_db, "metadata")
+my_metadata_derived <- tbl(my_db, "metadata_derived")
+my_profiles <- tbl(my_db, "profiles")
+my_signatures <- tbl(my_db, "signatures")
+my_ccf <- tbl(my_db, "ccf")
+```
+
+# Background
+
+In Automatic Matching of Bullet Lands, we used the Hamby 252 set [@hamby:2009] to train and develop a random forest in order to provide a matching probability for two bullet lands. While the algorithm had a very strong performance on this set, some limitations were immediately clear. For instance, performance was assessed only on this single set of 35 bullets. Each of these bullets was part of controlled study, and the full lands were available for matching. While there were some data quality issues, this was still a near ideal test case for the algorithm.
+
+Real world applications of bullet matching often involve the recovery of fragments of bullets from the crime scene. Traditional features used in forensic examination work well for a full land, but there has been less investigation into their performance in the case of a fragmented land. For example, the CMS (Consecutively Matching Striae) [@biasotti:1959] is naturally limited by the portion of the land that can be recovered.
+
+In this paper, we take steps to address these and other concerns. Specifically, we begin by reviewing features from the literature, computed on pairs of bullet lands, and providing some of our own features. We show how these have been standardized to account for the portion of the land that is recovered. Once these have been standardized, we tackle two issues that were previously unaddressed in Automatic Matching of Bullet Lands. The first is the effect of the operator of the microscope on the resulting data and algorithm performance, and the second is the effect of the amount of degradation. Finally, we take a few first steps towards generalizing a matching algorithm based on land-to-land comparisons, to one based on bullet-to-bullet comparisons, as would be done in a real world application of these ideas.
+
+# Feature Standardization
+
+To start, we introduce each feature provided in the CCF database table. Table \ref{tab:ccf1} provides the first eight columns of the CCF table, and Table \ref{tab:ccf2} provides the remaining seven columns.
+
+```{r, echo=FALSE, results='asis'}
+result <- my_ccf %>%
+    filter(compare_id == 4) %>%
+    head %>%
+    collect %>%
+    select(1:8) %>%
+    as.data.frame
+
+print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", caption = "A sample of six land-to-land comparisons, and derived features for these comparisons."), comment = FALSE, include.rownames = FALSE)
+```
+
+```{r, echo=FALSE, results='asis'}
+result2 <- my_ccf %>%
+    filter(compare_id == 4) %>%
+    head %>%
+    collect %>%
+    select(9:ncol(.)) %>%
+    as.data.frame
+
+print(xtable(result2, digits = c(4, 4, 4, 4, 4, 4, 4, 4), label = "tab:ccf2", caption = "The remaining derived features for the previous six land-to-land comparisons."), comment = FALSE, include.rownames = FALSE)
+```
+
+The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particular cross-comparison between two profiles, with the given `compare_id` parameters. The remaining columns are the relevant features for the comparison. The definitions of the features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each feature are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
+
+- **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The Cross-Correlation function is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
+- **rough_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures. This attempts to model the roughness of the surface after removing the waviness.
+- **lag** (mm) Is the optimal lag for the ccf value.
+- **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = \frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
+- **sd_D** (mm) provides the standard deviation of the values of *D* from above.
+- **signature_length** (mm) is the overall length of the smallest of the two aligned signatures.
+- **overlap** (%) provides the percentage of the two signatures that overlap after the alignment stage.
+- **matches** (per mm) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **mismatches** (per mm) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **cms** (per mm) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
+- **non_cms** (per mm) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **sum_peaks** (per mm) is the the sum of the average heights of matched striae.
+
+The features that are provided on the per millimeter level are intended to support the degraded land case, as discussed. Note that the computation differs slightly depending on the feature. For example, to standardize the number of matches, the raw number of matching striae are taken, and this is divided by the length of the overlapping region of the two lands (`overlap` from above). In most cases, the overlapping region will be very close to the length of the smaller signature. But depending on the alignment, this may not always be true. This ensures that we don't punish a particular cross-comparison for having a smaller region in which matches could occur. On the other hand, the number of mismatches is divided by the total length of the two aligned signatures, since mismatched striae can occur even in the non-overlapping region of the two signatures.
+
+The `rough_cor` or Roughness Correlation is derived by performing a second smoothing step, and subtracting the result from the original signatures. This creates a new signature which eliminates some of the overall structure, allowing global deformations to have less of an influence on the model output. Where the roughness correlation is most useful is in a scenario like Figure \ref{fig:roughcorgood}. This figure shows the alignment of profile 40977 with 47600. The top panel shows the smoothed signatures. The middle panel overlays a LOESS fit to the average of the two signatures. Finally, to derive the roughness correlation, this LOESS is subtracted from the original signature to create a new set of roughness residuals, which are then given in the bottom panel. Note that these two profiles do not match, yet the ccf is 0.7724. The roughness correlation (-0.0324) correctly indicates the lack of matching. The roughness correlation acts as a check against false positives which can arise when there are significant deformations in the overall structure, as in the case with both these profiles.
+
+```{r roughcorgood, echo=FALSE, fig.cap='Alignment of profile 40977 with 47600. The top panel shows the smoothed signatures. The middle panel overlays a LOESS fit to the average of the two signatures. Finally, to derive the roughness correlation, this LOESS is subtracted from the original signature to create a new set of roughness residuals, which are then given in the bottom panel. Note that these two profiles do not match, yet the ccf is 0.7724. The roughness correlation (-0.0324) correctly indicates the lack of matching.'}
+bullets_smoothed <- my_signatures %>% filter(run_id == 3) %>% collect(n = Inf)
+
+br1 <- filter(bullets_smoothed, profile_id == 40977) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+br2 <- filter(bullets_smoothed, profile_id == 47600) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+
+res <- bulletGetMaxCMS(br1, br2, column = "l30", span = 5)
+
+prof1_zeroed <- br1 %>% 
+    mutate(y = y - min(y),
+           profile_id = factor(bullet))
+
+prof2_zeroed <- br2 %>%
+    mutate(y = y - min(y)) %>%
+    mutate(y = y + res$lag,
+           profile_id = factor(bullet))
+
+final_profs <- rbind(prof1_zeroed, prof2_zeroed)
+
+doublesmoothed <- final_profs %>%
+    group_by(y) %>%
+    mutate(avgl30 = mean(l30, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(smoothavgl30 = smoothloess(x = y, y = avgl30, span = 0.3),
+           l50 = l30 - smoothavgl30)
+
+ys <- intersect(prof1_zeroed$y, prof2_zeroed$y)
+    
+final_doublesmoothed <- doublesmoothed %>%
+    filter(y %in% ys)
+
+p1 <- ggplot(data = final_profs, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+p2 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    geom_smooth(inherit.aes = FALSE, aes(x = y, y = avgl30), colour = "purple") +
+    theme_bw()
+
+p3 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l50, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+In a typical comparison between two profiles, such as in Figure \ref{fig:roughcorfine}, the roughness correlation does not meaningfully impact the matching probability given the presence of the ccf in the model. In this figure, we see the alignment of profile 8752 with profile 136676. In this case, the waviness or the deformation pattern in the signatures is more minor, and hence the resulting roughness signature resembles the original signature more closely. These profiles match, and both ccf (0.6891) and rough_cor (0.7980) provide values indicative of matching.
+
+```{r roughcorfine, echo=FALSE, fig.cap='Alignment of profile 8752 with profile 136676. In this case, the waviness or the deformation pattern in the signatures is more minor, and hence the resulting roughness signature resembles the original signature more closely. These profiles match, and both ccf (0.6891) and rough_cor (0.7980) provide values indicative of matching.'}
+
+## DONE TODO: Sketch out process of rough cor (show loess, etc.)
+## DONE Flip the two examples - say "roughness correlation doesnt affect matching prob" instead of "may not be needed" - but helps to identify mismatches
+## DONE Change to percentages for Table 4.10
+## Degraded: full bullet land from a lab, against a land split in half - lag max should be complete length of the other land. Either create hamby halves data and store in db, or run parameter to split in half (two parameters, a left and a right pixel) - ACTUALLY compare parameter, use signature. Make boxplot of left and right land effect. Plot of match probability of all known matches as a function of degraded percentage.
+## Talk about matching full bullets (diagnonal)
+
+br1 <- filter(bullets_smoothed, profile_id == 8752) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+br2 <- filter(bullets_smoothed, profile_id == 136676) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+
+res <- bulletGetMaxCMS(br1, br2, column = "l30", span = 5)
+
+prof1_zeroed <- br1 %>% 
+    mutate(y = y - min(y),
+           profile_id = factor(bullet))
+
+prof2_zeroed <- br2 %>%
+    mutate(y = y - min(y)) %>%
+    mutate(y = y + res$lag,
+           profile_id = factor(bullet))
+
+final_profs <- rbind(prof1_zeroed, prof2_zeroed)
+
+doublesmoothed <- final_profs %>%
+    group_by(y) %>%
+    mutate(avgl30 = mean(l30, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(smoothavgl30 = smoothloess(x = y, y = avgl30, span = 0.3),
+           l50 = l30 - smoothavgl30)
+
+ys <- intersect(prof1_zeroed$y, prof2_zeroed$y)
+    
+final_doublesmoothed <- doublesmoothed %>%
+    filter(y %in% ys)
+
+p1 <- ggplot(data = final_profs, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+p2 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l30, colour = profile_id)) +
+    geom_line() +
+    geom_smooth(inherit.aes = FALSE, aes(x = y, y = avgl30), colour = "purple") +
+    theme_bw()
+
+p3 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l50, colour = profile_id)) +
+    geom_line() +
+    theme_bw()
+
+grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+# Model Training
+
+Using these features the randomForest [@randomForest] package, we can train a model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
+
+```{r, echo=FALSE, cache=FALSE}
+con <- dbConnect(MySQL(), user = user, password = password,
+                 dbname = dbname, host = host)
+
+all_bullets_metadata <- dbReadTable(con, "metadata")
+my_matches <- dbReadTable(con, "matches") %>% mutate(match = 1)
+profiles <- dbReadTable(con, "profiles")
+ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == 4)
+
+CCFs_withlands <- ccf %>%
+    left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%
+    left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile2_id" = "profile_id")) %>%
+    left_join(my_matches, by = c("land_id.x" = "land1_id", "land_id.y" = "land2_id")) %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.x" = "land_id")) %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
+    filter(study.x != "Cary", study.y != "Cary") %>%
+    filter(study.y != "Hamby44" | barrel.y != "E") %>%
+    filter(study.x != "Hamby44" | barrel.x != "E") %>%
+    arrange(study.x, study.y) %>%
+    mutate(match = as.logical(replace(match, is.na(match), 0)))
+```
+
+We can now train the forest using the previously defined features. We split the data into an 80% training, 20% testing framework to assess its out of sample performance, using the `caret` package [@caretpkg]. Table \ref{tab:avgforest} provides the results as a confusion matrix on the test set, averaged over ten independent random forests trained on ten random data subsets. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently (approximately 23 false negative land to land comparisons on the test set, compared with an average of less than one false positive).
+
+```{r, echo=FALSE, results='asis'}
+includes <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
+                                         "study.x", "study.y", "barrel.x", "barrel.y",
+                                         "bullet.x", "bullet.y", "land.x", "land.y",
+                                         "land_id.x", "land_id.y", "signature_length"))
+
+set.seed(20170222)
+trainIndex <- createDataPartition(1:nrow(CCFs_withlands), p = 0.8, list = TRUE, times = 10)
+match_result <- trainIndex %>% purrr::map_df(function(index) {
+    CCFs_train <- CCFs_withlands[index,]
+    CCFs_test = setdiff(CCFs_withlands, CCFs_train)
+    
+    rtrees <- randomForest(factor(match) ~ ., data = CCFs_train[,includes], ntree = 300)
+    
+    CCFs_test$forest <- predict(rtrees, newdata = CCFs_test, type = "prob")[,2]
+    imp <- data.frame(importance(rtrees))
+    confmat <- as.data.frame(xtabs(~(forest > 0.5) + match + study.x + study.y, data = CCFs_test))
+    names(confmat) <- c("Prediction", "Actual", "study.x", "study.y", "Count")
+    
+    mydf <- confmat %>%
+        mutate(Study = paste(study.x, study.y, sep = "_"),
+               Result = rep(c("True Negative", "False Positive", "False Negative", "True Positive"), times = length(unique(Study)))) %>%
+        mutate(Study = replace(Study, which(Study == "Hamby44_Hamby252"), "Hamby252_Hamby44")) %>%
+        dplyr::select(Study, Result, Count) %>%
+        group_by(Study, Result) %>%
+        summarise(Count = sum(Count)) %>%
+        as.data.frame
+    
+    return(mydf)
+}) 
+match_result <- cbind(id = rep(1:10, each = nrow(match_result) / 10), match_result)
+match_result_wide <- match_result %>%
+    spread(key = Result, value = Count)
+
+result <- match_result %>%
+    group_by(Result) %>%
+    summarise(Count = mean(Count))
+sens_result <- result$Count[result$Result == "True Positive"] / (result$Count[result$Result == "True Positive"] + result$Count[result$Result == "False Negative"])
+spec_result <- result$Count[result$Result == "True Negative"] / (result$Count[result$Result == "True Negative"] + result$Count[result$Result == "False Positive"])
+
+print(xtable(result, digits = c(0, 0, 1), label = "tab:avgforest", caption = "The average confusion matrix for the 10 random forests. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
+```
+
+These results suggest that our algorithm is a bit too conservative in predicting a match when in fact the bullets were fired from the same gun barrel. We can break down the confusion matrix depending on the study that each of the two lands originated from. Table \ref{tab:avgforeststudy} provides the average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average. This intuitively makes some sense given the presence of potential scanner operator effects, which we will address further in this section.
+
+```{r, echo=FALSE, results='asis'}
+result <- match_result %>%
+    group_by(Study, Result) %>%
+    summarise(Count = mean(Count)) %>%
+    spread(key = Result, value = Count)
+
+result_wide_row <- result
+result_wide_row[,-1] <- t(apply(result_wide_row[,-1], 1, function(x) paste0(round(100 * x / sum(x), digits = 2), "%")))
+
+print(xtable(result_wide_row, label = "tab:avgforeststudy", caption = "The average confusion matrix for the 10 random forests, broken down by study. It can be seen that Hamby252 to Hamby252 comparisons exhibit the fewest errors, while Hamby252 to Hamby44 comparisons exhibit the most on average."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
+```
+
+# Feature Robustness
+
+## Operator Effects
+
+We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds across different operators, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study since the Hamby data in both sets originated from the same gun barrels.
+
+```{r, echo=FALSE}
+includes_study <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
+                                         "barrel.x", "barrel.y", "match",
+                                         "bullet.x", "bullet.y", "land.x", "land.y",
+                                         "land_id.x", "land_id.y", "study.x", "study.y", "signature_length"))
+
+result_study <- trainIndex %>% purrr::map_df(function(index) {
+    CCFs_train <- CCFs_withlands[index,]
+    CCFs_test = setdiff(CCFs_withlands, CCFs_train)
+    
+    CCFs_train$Study <- paste(CCFs_train$study.x, CCFs_train$study.y, sep = "_")
+    CCFs_test$Study <- paste(CCFs_test$study.x, CCFs_test$study.y, sep = "_")
+    CCFs_train$Study <- factor(replace(CCFs_train$Study, which(CCFs_train$Study == "Hamby44_Hamby252"), "Hamby252_Hamby44"))
+    CCFs_test$Study <- factor(replace(CCFs_test$Study, which(CCFs_test$Study == "Hamby44_Hamby252"), "Hamby252_Hamby44"))
+    
+    includes_study <- setdiff(names(CCFs_train), c("compare_id", "profile1_id", "profile2_id", "barrel.x", "barrel.y", "match", "bullet.x", "bullet.y", "land.x", "land.y", "land_id.x", "land_id.y", "study.x", "study.y"))
+
+    rtrees_study <- randomForest(Study ~ ., data = CCFs_train[,includes_study], ntree = 300)
+    
+    CCFs_test$study_forest <- predict(rtrees_study, newdata = CCFs_test)
+    confmat <- as.data.frame(xtabs(~study_forest + Study, data = CCFs_test))
+    names(confmat) <- c("Prediction", "Actual", "Count")
+    
+    return(confmat)
+})
+```
+
+Table \ref{tab:studypred} provides the confusion matrix, with column proportions, for the random forest with study as the response. It can be seen that while overall the random forest performs poorly, as hoped, comparisons between Hamby252 bullets are more distinguishable from other comparisons.
+
+```{r, echo=FALSE, results='asis'}
+study_result <- cbind(id = rep(1:10, each = nrow(result_study) / 10), result_study)
+study_result_wide <- study_result %>%
+    spread(key = Actual, value = Count) %>%
+    group_by(Prediction) %>%
+    summarise_each(funs(mean)) %>%
+    select(-id) %>%
+    as.data.frame
+study_result_wide_col <- study_result_wide
+study_result_wide_col[,-1] <- apply(study_result_wide_col[,-1], 2, function(x) paste0(round(100 * x / sum(x), digits = 2), "%"))
+names(study_result_wide_col)[1] <- "Prediction \\ Actual"
+
+print(xtable(study_result_wide_col, digits = c(0, 0, 3, 3, 3), label = "tab:studypred", caption = "Confusion Matrix (Column Proportions) for the random forest with study as the response. It can be seen that while overall the random forest performs poorly, as hoped, comparisons between Hamby252 bullets is more distinguishable from other comparisons."), comment = FALSE, include.rownames = FALSE, table.placement = "H")
+```
+
+Figure \ref{fig:ccfstudy} give the distributions of the features defined above, faceted by whether the lands are known to be fired from the same gun barrel, across different study to study comparisons. The distributions among the known non-matches seem relatively consistent across study based on visual inspection. On the other hand, among known matches, Hamby252 to Hamby252 comparisons exhibit more pronounced features, including a higher average ccf, higher number of matches, and higher value of sum_peaks.
+
+```{r ccfstudy, echo=FALSE, message=FALSE, fig.cap="Distribution of the features, facetted by match, for different study to study comparisons of lands.", fig.height=13, fig.width=10}
+CCFs_features <- CCFs_withlands %>%
+    mutate(Study = factor(paste(study.x, study.y, sep = "_"))) %>%
+    mutate(Study = replace(Study, which(Study == "Hamby44_Hamby252"), "Hamby252_Hamby44")) %>%
+    select(-matches("_id|study.x|study.y|barrel|bullet|land|signature_length|non_cms|sd_D|lag")) %>%
+    select(Study, match, everything()) %>%
+    mutate(match = factor(match, labels = c("Known Non-Match", "Known Match"))) %>%
+    gather(key = feature, value = value, 3:ncol(.))
+
+ggplot(CCFs_features, aes(x = Study, y = value)) +
+    geom_boxplot() +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90)) +
+    facet_grid(feature~match, scales = "free") +
+    ggtitle("Distributions of Features by Study and Match") +
+    xlab("Study") +
+    ylab("Value")
+```
+
+Though visual inspection clearly shows differences, we can more formally assess the differences in the distributions formally with a Kolmogrov-Smirnov test. Table \ref{tab:kstests} gives the results of pairwise tests, for each feature, between different set comparisons, and between known matches compared with known non-matches. Although the tests are significant, looking at the raw values of the D statistic suggest that the largest effect sizes do in fact occur in comparisons with two Hamby252 lands, as the visual inspection of the boxplots also suggested.
+
+These results strongly suggest the need for controlling for more effects when performing the analysis. Specifically, microscope operator effects resulting in variations in scan quality and scan parameters seem to play a role in the utlimate performance of the algorithm. Land to land comparisons from Hamby252 consistently result in more pronounced expression of features among known matches, and therefore result in a better ultimate accuracy in the random forest. Rigorous procedures to ensure scan quality and consistency across operators should be put in place to minimize the effect of the study and ensure the assumption of land to land independence is satisfied.
+
+Another way to demostrate the study/operator effect is by observing the distribution of our algorithm's ideal cross section by study. Figure \ref{fig:crosscompare} gives the distributions of the ideal cross sections by study. It can be seen that the Hamby44 ideal cross sections are much more likely to be close to the base of the bullet compared to Hamby252.
+
+```{r crosscompare, echo=FALSE, fig.cap='Distributions of the ideal cross sections by study. It can be seen that the Hamby44 ideal cross sections are much more likely to be close to the base of the bullet compared to Hamby252.'}
+result <- dbReadTable(con, "metadata_derived") %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study)) %>%
+    filter(run_id == max(run_id)) %>%
+    dplyr::select(land_id, ideal_crosscut, study) %>%
+    filter(!is.na(ideal_crosscut), study != "Cary")
+
+ggplot(result, aes(x = study, y = ideal_crosscut)) +
+    geom_boxplot() +
+    theme_bw() +
+    ylim(c(0, 400)) +
+    ggtitle("Distribution of Ideal Cross Section by Study")
+```
+
+Indeed, another Kolmogorov-Smirnov test also confirms a significant difference in the distributions of these values ($D = 0.6239, p < 0.0001$). Because the difference is significant, it strongly suggests that the operator effect in the bullet scanning procedure must be taken into account in order to assume pairwise independence.
+
+```{r, eval=FALSE, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+mytest <- ks.test(x = result$ideal_crosscut[result$study == "Hamby252"], y = result$ideal_crosscut[result$study == "Hamby44"])
+
+print(xtable(tidy(mytest), digits = c(0, 4, 4, 0, 0), label = "tab:mykstest", caption = "Results for the Kolmogrov-Smirnov distributional test between values of the ideal cross section for Hamby252 compared with Hamby44."), comment = FALSE, include.rownames = FALSE)
+```
+
+## Degraded Lands
+
+We now turn our attention to matching degraded bullet lands, in which only fragments of the land can be recovered. Because the NIST database currently contains only full bullet lands, this will involve performing a simulation and making some simplifying assumptions. We will simulate various levels of degradation from the left, right, and middle of the land. We will use degradation levels of $0$, $\frac{1}{32}$, $\frac{1}{16}$, $\frac{1}{8}$, $\frac{1}{4}$, $\frac{1}{2}$, and $\frac{3}{4}$ where each fraction represents the proportion of the land that is missing (i.e., a degradation level of $\frac{1}{4}$ implies that only 75% of the land was recoverable.) We will do this by subsetting the signatures. Note that this is a bit of a simplification because the signatures themselves are somewhat dependent on the data that is missing because of the properties of the LOESS smoother.
+
+```{r, cache=FALSE, echo=FALSE}
+load("data/rtrees.RData")
+
+ccf <- dbReadTable(con, "ccf") %>% filter(compare_id >= 4)
+compares <- dbReadTable(con, "compares")
+CCFs_withlands_degrade <- ccf %>%
+    left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%
+    left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile2_id" = "profile_id")) %>%
+    left_join(my_matches, by = c("land_id.x" = "land1_id", "land_id.y" = "land2_id")) %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.x" = "land_id")) %>%
+    left_join(dplyr::select(all_bullets_metadata, land_id, study, barrel, bullet, land), by = c("land_id.y" = "land_id")) %>%
+    left_join(dplyr::select(compares, compare_id, degrade_left, degrade_right), by = c("compare_id" = "compare_id")) %>%
+    filter(study.x != "Cary", study.y != "Cary") %>%
+    arrange(study.x, study.y) %>%
+    mutate(match = as.logical(replace(match, is.na(match), 0)),
+           degrade_right = 1 - degrade_right)
+
+CCFs_withlands_degrade$forest <- predict(rtrees, newdata = CCFs_withlands_degrade, type = "prob")[,2]
+CCFs_withlands_plot <- CCFs_withlands_degrade
+CCFs_withlands_plot$match <- factor(CCFs_withlands_plot$match, labels = c("Known Non-Match", "Known Match"))
+```
+
+Figure \ref{fig:senspe} gives the sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep. For a more indepth exploration into the matching probabilities, Figure \ref{fig:deghist} provides histograms of the matching probability facetted by the degradation level and known match versus known non-match. The matching probabilities suffer compared with the full lands in all cases, but the change is much less for different levels of right degradation - In other words, if we degrade the right side of the land and maintain portions of the left side, the algorithm is better able to provide matching probabilities that accurately reflect the true state of nature.
+
+```{r senspe, echo=FALSE, fig.cap='Sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the land proportion, but that the decline for left degradation is less steep in terms of specificity.'}
+result <- CCFs_withlands_degrade %>%
+    mutate(fixed = ifelse(degrade_left == 0 & degrade_right == 0, "full", ifelse(degrade_left == 0, "left", ifelse(degrade_right == 0, "right", "middle"))),
+           level = degrade_left + degrade_right) %>%
+    dplyr::select(profile1_id, profile2_id, forest, match, fixed, level) %>%
+    mutate(pred = (forest > .5)) %>%
+    group_by(fixed, level) %>%
+    summarise(sensitivity = mean(sensitivity(factor(!pred), factor(!match))),
+              specificity = mean(specificity(factor(!pred), factor(!match)))) %>%
+    gather(key = metric, value = value, 3:4) %>%
+    arrange(fixed, level)
+result$value[1:2] <- c(sens_result, spec_result)
+
+## Produce plot
+ggplot(result, aes(x = level, y = value, colour = fixed)) +
+    facet_wrap(~metric, scales = "free_y", nrow = 2) +
+    geom_point() +
+    geom_line() +
+    theme_bw() +
+    scale_x_continuous(breaks = c(0, .125, .25, .375, .5, .625, .75), labels = c("100%", "87.5%", "75%", "62.5%", "50%", "37.5%", "25%")) +
+    xlab("Land Proportion")
+```
+
+Figure \ref{fig:featexp} gives the feature expression for known matches, as a function of the land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed. In particular, the ccf, cms, and roughness correlation remain high even as the land degrades. Meanwhile, features that are inversely correlated with matching probability, such as D and mismatches, are most strongly expressed in the right-fixed lands.
+
+```{r featexp, echo=FALSE, fig.cap='Feature expression for known matches, as a function of land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed.'}
+feature_exp <- CCFs_withlands_degrade %>%
+    filter(match) %>%
+    dplyr::select(degrade_left, degrade_right, ccf, rough_cor, D, matches, mismatches, cms, non_cms, sum_peaks) %>%
+    gather(key = feature, value = value, 3:ncol(.)) %>%
+    group_by(degrade_left, degrade_right, feature) %>%
+    summarise(value = mean(value, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(fixed = ifelse(degrade_left == 0 & degrade_right == 0, "full", ifelse(degrade_left == 0, "left", ifelse(degrade_right == 0, "right", "middle"))),
+           level = degrade_left + degrade_right)
+
+ggplot(data = feature_exp, aes(x = level, y = value, colour = fixed)) +
+    geom_point() +
+    geom_line() +
+    theme_bw() +
+    scale_x_continuous(breaks = c(0, .25, .5), labels = c("100%", "75%", "50%")) +
+    xlab("Land Proportion") +
+    facet_wrap(~feature, scales = "free_y")
+```
+
+To come full circle, we will now attempt to match a particular land which exhibits bad tank rash. Figure \ref{fig:br924} provides an image of the surface of this land. Due to the tank rash, it was originally excluded from matching consideration. However, it can be seen that approximately half of the bullet remains relatively unaffected.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/br9-2-4-grey.png}
+\caption{Land 4 of Bullet 2, from Barrel 9 of Hamby Set 252. It can be seen that this particular land exhibits some major tank rash.}
+\label{fig:br924}
+\end{figure}
+
+Table \ref{tab:br924pred} provides the features derived, after extracting only the first 50% of the Hamby Barrel 9 Bullet 2, 4th land (and hence, simulating a left-fixed 50% degraded scenario), compared with a feature comparison between both full lands (and hence, including the tank rash striae). The features are derived in a comparison with its known match, the full Bullet 1 3rd land fired from Barrel 9. The features, including the ccf and the matches, are expressed enough to (barely) indicate a match in the case of the degraded bullet. Using the pre-trained random forest, the predicted matching probability is 51.67%. This is encouraging in that attempting to match the full bullet land, by comparison, yields a matching probability of 0.0167%. This is due to the relatively higher values of the ccf, cms, and matches for the degraded comparison, and suggests the feature standardization is working as intended.
+
+```{r, echo=FALSE, results='asis'}
+br924 <- read_x3p("images/Hamby (2009) Barrel/bullets/Br9 Bullet 2-4.x3p")
+
+myprof <- get_crosscut(bullet = br924, x = 125)
+
+procbul <- processBullets(br924, name = "br924", x = 125, grooves = get_grooves(myprof)$groove) %>% bulletSmooth()
+
+br1 <- procbul %>%
+    filter(!is.na(l30)) %>%
+    filter(y <= quantile(y, .5)) %>%
+    select(bullet, y, value, fitted, resid, se, l30) %>%
+    ungroup() %>%
+    mutate(bullet = 116408)
+br2 <- filter(bullets_smoothed, profile_id == 116407) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+
+res <- bulletGetMaxCMS(br1, br2, column = "l30", span = 25)
+
+lofX <- res$bullets
+b12 <- unique(lofX$bullet)
+
+subLOFx1 <- subset(lofX, bullet==b12[1])
+subLOFx2 <- subset(lofX, bullet==b12[2]) 
+
+ys <- intersect(subLOFx1$y, subLOFx2$y)
+
+idx1 <- which(subLOFx1$y %in% ys)
+idx2 <- which(subLOFx2$y %in% ys)
+distr.dist <- sqrt(mean(((subLOFx1$val[idx1] - subLOFx2$val[idx2]) * 1.5625 / 1000)^2, na.rm=TRUE))
+distr.sd <- sd(subLOFx1$val * 1.5625 / 1000, na.rm=TRUE) + sd(subLOFx2$val * 1.5625 / 1000, na.rm=TRUE)
+km <- which(res$lines$match)
+knm <- which(!res$lines$match)
+if (length(km) == 0) km <- c(length(knm)+1,0)
+if (length(knm) == 0) knm <- c(length(km)+1,0)
+#browser()    
+# feature extraction
+signature.length <- min(nrow(subLOFx1), nrow(subLOFx2))
+
+doublesmoothed <- lofX %>%
+    group_by(y) %>%
+    mutate(avgl30 = mean(l30, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(smoothavgl30 = smoothloess(x = y, y = avgl30, span = .3),
+           l50 = l30 - smoothavgl30)
+
+final_doublesmoothed <- doublesmoothed %>%
+    filter(y %in% ys)
+
+rough_cor <- cor(na.omit(final_doublesmoothed$l50[final_doublesmoothed$bullet == b12[1]]), 
+                  na.omit(final_doublesmoothed$l50[final_doublesmoothed$bullet == b12[2]]),
+                  use = "pairwise.complete.obs")
+
+testdf <- data.frame(ccf=res$ccf, rough_cor = rough_cor, lag=res$lag / 1000, 
+           D=distr.dist, 
+           sd_D = distr.sd,
+           b1=b12[1], b2=b12[2],
+           signature_length = signature.length * 1.5625 / 1000,
+           overlap = length(ys) / signature.length,
+           matches = sum(res$lines$match) * (1000 / 1.5625) / length(ys),
+           mismatches = sum(!res$lines$match) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           cms = res$maxCMS * (1000 / 1.5625) / length(ys),
+           cms2 = bulletr::maxCMS(subset(res$lines, type==1 | is.na(type))$match) * (1000 / 1.5625) / length(ys),
+           non_cms = bulletr::maxCMS(!res$lines$match) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           left_cms = max(knm[1] - km[1], 0) * (1000 / 1.5625) / length(ys),
+           right_cms = max(km[length(km)] - knm[length(knm)],0) * (1000 / 1.5625) / length(ys),
+           left_noncms = max(km[1] - knm[1], 0) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           right_noncms = max(knm[length(knm)]-km[length(km)],0) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           sum_peaks = sum(abs(res$lines$heights[res$lines$match])) * (1000 / 1.5625) / length(ys)
+)
+
+mypred <- predict(rtrees, newdata = testdf, type = "prob")[,2]
+
+br1 <- procbul %>%
+    filter(!is.na(l30)) %>%
+    #filter(y <= quantile(y, .5)) %>%
+    select(bullet, y, value, fitted, resid, se, l30) %>%
+    ungroup() %>%
+    mutate(bullet = 116408)
+br2 <- filter(bullets_smoothed, profile_id == 116407) %>%
+    dplyr::select(-run_id) %>%
+    rename(bullet = profile_id) %>%
+    filter(!is.na(l30))
+
+res <- bulletGetMaxCMS(br1, br2, column = "l30", span = 25)
+
+lofX <- res$bullets
+b12 <- unique(lofX$bullet)
+
+subLOFx1 <- subset(lofX, bullet==b12[1])
+subLOFx2 <- subset(lofX, bullet==b12[2]) 
+
+ys <- intersect(subLOFx1$y, subLOFx2$y)
+
+idx1 <- which(subLOFx1$y %in% ys)
+idx2 <- which(subLOFx2$y %in% ys)
+distr.dist <- sqrt(mean(((subLOFx1$val[idx1] - subLOFx2$val[idx2]) * 1.5625 / 1000)^2, na.rm=TRUE))
+distr.sd <- sd(subLOFx1$val * 1.5625 / 1000, na.rm=TRUE) + sd(subLOFx2$val * 1.5625 / 1000, na.rm=TRUE)
+km <- which(res$lines$match)
+knm <- which(!res$lines$match)
+if (length(km) == 0) km <- c(length(knm)+1,0)
+if (length(knm) == 0) knm <- c(length(km)+1,0)
+#browser()    
+# feature extraction
+signature.length <- min(nrow(subLOFx1), nrow(subLOFx2))
+
+doublesmoothed <- lofX %>%
+    group_by(y) %>%
+    mutate(avgl30 = mean(l30, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(smoothavgl30 = smoothloess(x = y, y = avgl30, span = .3),
+           l50 = l30 - smoothavgl30)
+
+final_doublesmoothed <- doublesmoothed %>%
+    filter(y %in% ys)
+
+rough_cor <- cor(na.omit(final_doublesmoothed$l50[final_doublesmoothed$bullet == b12[1]]), 
+                  na.omit(final_doublesmoothed$l50[final_doublesmoothed$bullet == b12[2]]),
+                  use = "pairwise.complete.obs")
+
+testdf2 <- data.frame(ccf=res$ccf, rough_cor = rough_cor, lag=res$lag / 1000, 
+           D=distr.dist, 
+           sd_D = distr.sd,
+           b1=b12[1], b2=b12[2],
+           signature_length = signature.length * 1.5625 / 1000,
+           overlap = length(ys) / signature.length,
+           matches = sum(res$lines$match) * (1000 / 1.5625) / length(ys),
+           mismatches = sum(!res$lines$match) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           cms = res$maxCMS * (1000 / 1.5625) / length(ys),
+           cms2 = bulletr::maxCMS(subset(res$lines, type==1 | is.na(type))$match) * (1000 / 1.5625) / length(ys),
+           non_cms = bulletr::maxCMS(!res$lines$match) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           left_cms = max(knm[1] - km[1], 0) * (1000 / 1.5625) / length(ys),
+           right_cms = max(km[length(km)] - knm[length(knm)],0) * (1000 / 1.5625) / length(ys),
+           left_noncms = max(km[1] - knm[1], 0) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           right_noncms = max(knm[length(knm)]-km[length(km)],0) * 1000 / abs(diff(range(c(subLOFx1$y, subLOFx2$y)))),
+           sum_peaks = sum(abs(res$lines$heights[res$lines$match])) * (1000 / 1.5625) / length(ys)
+)
+
+mypred2 <- predict(rtrees, newdata = testdf2, type = "prob")[,2]
+
+outputdf <- testdf %>%
+    select(ccf, rough_cor, D, overlap, matches, mismatches, cms, non_cms, sum_peaks) %>%
+    gather(key = Feature, value = `Degraded Land`)
+outputdf2 <- testdf2 %>%
+    select(ccf, rough_cor, D, overlap, matches, mismatches, cms, non_cms, sum_peaks) %>%
+    gather(key = Feature, value = `Full Land`)
+
+finaloutput <- outputdf %>%
+    left_join(outputdf2) %>%
+    rbind(data.frame(Feature = "matchprob", `Degraded Land` = mypred, `Full Land` = mypred2, check.names = FALSE))
+
+print(xtable(finaloutput, digits = c(0, 0, 4, 4), label = "tab:br924pred", caption = "Features extracted for a comparison of the full Hamby Barrel 9 Bullet 1 Land 3, with a left-fixed 50% degraded portion of Hamby Barrel 9 Bullet 2 Land 4. These two lands are known matches, and indeed the random forest does predict a match."), comment = FALSE, include.rownames = FALSE)
+```
+
+# From Lands to Bullets
+
+One other area deserving further exploration is generalizing these algorithms for matching full bullets rather than indvidual lands, as would be done in a criminal justice application. One such approach is to recognize that (at least for the Hamby bullets) there should be six matching pairs of lands for any two bullets that were fired from the same gun barrel. Therefore, for each pair of bullets, we can extract the six highest matching probabilities and average them. If we do so, we obtain a clear separation as seen in Figure \ref{fig:firstscore}. No known-matches have a score below 50%, while all known non-matches have a score below 10%.
+
+A less naive approach is to exploit the rotation of the bullet. For instance, if we knew that land 1 of bullet 1 matches to land 4 of bullet 2, then we immediately know that land 2 of bullet 1 matches to land 5 of bullet 2, land 3 of bullet 1 matches to land 6 of bullet 2, etc. Hence, we can take look across six diagonals of the $6 \otimes 6$ matrix containing match probabilities. Table \ref{tab:diag} gives an example of the matrix of matching probabilities between two sets of six lands from bullets that are known matches. The matching diagonal is clear based on the high probabilities (cell $(1, 3)$, cell $(2, 4)$, cell $(3, 5)$, etc.) although it can be seen that one of the six comparisons has a very low matching probability.
+
+```{r, echo=FALSE, results='asis'}
+CCFs_withlands$forest <- predict(rtrees, newdata = CCFs_withlands, type = "prob")[,2]
+
+result <- CCFs_withlands %>% 
+    filter(study.x == "Hamby252", barrel.x == 3, bullet.x == 1, study.y == "Hamby252", barrel.y == 3, bullet.y == 2) %>%
+    select(profile1_id, profile2_id, forest) %>%
+    spread(key = profile2_id, value = forest)
+
+print(xtable(result, digits = c(0, 0, 4, 4, 4, 4, 4, 4), label = "tab:diag", caption = "Matrix of matching probabilities between two sets of six lands from bullets that are known matches."), comment = FALSE, include.rownames = FALSE)
+```
+
+We can compute a score by multiplying the one minus the probabilities together, which provides an overall assessment of the probability of a non-match for the whole bullets. Finally, taking one minus the score will yield the overall score for matching. For each of the six diagonals:
+
+\begin{align}
+P(M) &= 1 - P(NM) \\
+     &= 1 - (P(NM1) \times P(NM2) \times ... \times P(NM6)) \\
+     &= 1 - ((1 - P(M1)) \times (1 - P(M2)) \times ... \times (1 - P(M6)))
+\end{align}
+
+Taking the maximum score obtained out of the six results in the final score. After doing so, we can plot the scores for known matches and known non-matches separately. Figure \ref{fig:scores} provides the distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.
+
+```{r scores, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.'}
+myfunc <- function(x) {
+     x <- x %>% 
+            select(profile1_id, profile2_id, forest) %>%
+            spread(key = profile2_id, value = forest)
+        testmat <- rbind(as.matrix(x[,-1]), as.matrix(x[,-1]))
+        result <- numeric(6)
+        for (i in 1:6) {
+            result[i] <- 1 - prod(1 - diag(testmat[-(1:6),]), na.rm = TRUE)
+            testmat <- shift.down(testmat)
+        }
+        return(max(result))
+}
+
+test <- CCFs_withlands %>% 
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    do(score = myfunc(.)) %>%
+    mutate(score = unlist(score))
+test2 <- CCFs_withlands %>%
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    summarise(match = any(match)) %>%
+    left_join(test)
+
+ggplot(data = test2, aes(x = match, y = score)) +
+    geom_boxplot() +
+    theme_bw()
+```
+
+# Conclusion
+
+In this paper, we have introduced a set of robust features which can be used to train bullet matching models. We've used these features to train a random forest and assess its accuracy. In doing so, we noted strong evidence of operator effects being present in terms of the differences in the microscope scans. 
+
+While these effects were clear, the way in which this should be accounted for is less clear, however. In the ideal case, bullets fired from a particular gun barrel should yield surface scans that are of identical quality and properties, regardless of the operator performing the scan. To achieve this, rigorous standards may need to be put in place with regards to the alignment of the bullet under the objective, and the procedure used to scan the bullet surface. Such procedures will require further investigation in order to lay out. For instance, due to the stark difference between the ideal cross section across two studies, procedures may need to dictate the margin from the edge of the objective at which the bullet can be placed.
+
+Some first steps towards addressing the issue of degraded bullet lands was also taken. As suspected, the algorithm performance declines as a function of the amount of degradation. However, depending on the location of the degradation, this effect differs. Among the known bullet matches, if the left hand portion of the Hamby bullet signatures remains in tact and we degrade the right hand side, the matching performance is far less impacted than if other portions of the land are degraded.
+
+As before, further generalization and analysis of these algorithms are a bit limited by a lack of data. The assessment has still been performed on a controlled test set. The degraded land simulation itself may not represent entirely realistic scenarios of recovering fragmented bullets. However, as more data is collected, the model can be continually updated and retrained in order to improve its performance and handle more obscure cases other than the idealized versions we've currently been working with.
+
+# Appendix
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE, results='asis'}
+all_combinations <- combn(unique(c(as.character(CCFs_features$Study), as.character(CCFs_features$Study))), 2, simplify = FALSE)
+
+myresult <- all_combinations %>% map_df(function(x) {
+    final_result <- try({
+        set1 <- filter(CCFs_features, Study == x[1])
+        set2 <- filter(CCFs_features, Study == x[2])
+        
+        result <- set1 %>%
+            rbind(set2) %>%
+            group_by(feature) %>%
+            do(matchtest = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Match"])$p.value,
+               matchd = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Match"])$statistic,
+               nonmatchtest = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Non-Match"])$p.value,
+               nonmatchd = ks.test(x = filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"], y = filter(., Study == x[2])$value[filter(., Study == x[2])$match == "Known Non-Match"])$statistic,
+               set1_matchcount = length(filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Match"]),
+               set1_nonmatchcount = length(filter(., Study == x[1])$value[filter(., Study == x[1])$match == "Known Non-Match"]),
+               set2_matchcount = length(filter(., Study == x[2])$value[filter(., Study == x[1])$match == "Known Match"]),
+               set2_nonmatchcount = length(filter(., Study == x[2])$value[filter(., Study == x[1])$match == "Known Non-Match"])
+               
+            )
+    })
+    
+    if (inherits(final_result, "try-error")) return(NULL)
+    
+    return(final_result %>% mutate(set1 = x[1], set2 = x[2]) %>% select(set1, set2, everything()) %>% as.data.frame)
+})
+
+final_result <- myresult %>%
+    mutate_each(funs(unlist)) %>%
+    mutate(set1 = gsub("Hamby", "H", set1),
+           set2 = gsub("Hamby", "H", set2),
+           matchtest = round(matchtest, digits = 4),
+           nonmatchtest = round(nonmatchtest, digits = 4)) %>%
+    as.data.frame
+final_result$matchtest[final_result$matchtest < .0001] <- "< 0.0001"
+final_result$nonmatchtest[final_result$nonmatchtest < .0001] <- "< 0.0001"
+
+print(xtable(final_result[,1:7], digits = c(0, 0, 0, 0, 0, 4, 0, 4), label = "tab:kstests", caption = "Results for the Kolmogrov-Smirnov distributional test."), comment = FALSE, include.rownames = FALSE)
+```
+
+```{r deghist, echo=FALSE, fig.cap='Histograms of matching probability, facetted by the degradation level and known match versus known non-match.', fig.height=9.5, fig.width=8}
+p1 <- ggplot(data = filter(CCFs_withlands_plot, degrade_left == 0), aes(x = forest)) +
+    geom_histogram() +
+    facet_grid(match~degrade_right, scales = "free_y") +
+    ggtitle("Left Fixed") +
+    theme_bw()
+p2 <- ggplot(data = filter(CCFs_withlands_plot, degrade_right == 0), aes(x = forest)) +
+    geom_histogram() +
+    facet_grid(match~degrade_left, scales = "free_y") +
+    ggtitle("Right Fixed") +
+    theme_bw()
+p3 <- ggplot(data = filter(CCFs_withlands_plot, (degrade_left == 0 & degrade_right == 0) | (degrade_right != 0 & degrade_left != 0)), aes(x = forest)) +
+    geom_histogram() +
+    facet_grid(match~degrade_left+degrade_right, scales = "free_y") +
+    ggtitle("Middle Fixed") +
+    theme_bw()
+
+grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+```{r firstscore, echo=FALSE, fig.cap='Score distributions for the naive approach to bullet matching, for known matches and known non-matches.'}
+result <- CCFs_withlands %>%
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    summarise(forest = mean(head(sort(forest, decreasing = TRUE))), match = any(match))
+
+ggplot(data = result, aes(x = match, y = forest)) +
+    geom_boxplot() +
+    theme_bw()
+```
