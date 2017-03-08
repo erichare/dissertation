@@ -8,8 +8,8 @@ Statistical Methods for Bullet Matching
 
 ## Outline
 
-1. Designing Modular Software: A Case Study in Introductory Statistics
-2. Automatic Matching of Bullet Lands
+1. Automatic Matching of Bullet Lands
+2. Bullet Land Feature Analysis
 3. A Modern Bullet Matching Application
     
 ## TODO 
