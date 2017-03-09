@@ -258,12 +258,18 @@ Finally, all stages are completed, and the resulting report is generated. A subs
 
 ## Back-End
 
+The back-end application, shown in Figure \ref{fig:backend-app}, stands in contrast to the front-end application by being primarily intended for researches looking to improve the matching performance of the algorithm. Like the front-end app, it uses the database to generate a list of all the bullet lands available. Unlike the front-end app, however, it allows the selection of only one land. Once it is selected, the ideal cross section will be displayed on the left.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{images/backapp1.png}
 \caption{User Interface for the back-end bullet matching algorithm.}
 \label{fig:backend-app}
 \end{figure}
+
+On the right hand side, there will be two tables. The first table is the metadata for that particular land, which comes directly from the original x3p file. The second table is information on the profile based on the selected cross-section. Beneath this table, the profile with the detected grooves overlaid is shown. Finally, beneath that, the signature derived from this profile is shown.
+
+While functionally simple, this application allows for the assessment of the generated signatures. In the course of tuning parameters and optimizing performance, we can examine signatures that may have issues, for instance if the grooves were not properly detected or a poor cross section was taken.
 
 # Conclusion
 
