@@ -4,3 +4,4 @@
 - True degraded data including multiple pieces of a land
 - Controlling for operator effects
 - More optimized comparison viewer (plotly)
+- Generative Models / likelihood ratios

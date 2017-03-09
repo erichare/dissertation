@@ -105,7 +105,7 @@ Similarly to the metadata table, the metadata_derived table (Sampled in Table \r
 my_metadata_derived <- tbl(my_db, "metadata_derived")
 
 result <- my_metadata_derived %>% 
-    filter(land_id >= 61, land_id <= 72) %>%
+    filter(land_id >= 61, land_id <= 72, run_id == 3) %>%
     as.data.frame
 ```
 
