@@ -14,19 +14,6 @@ Bullet matching is a process used to determine whether two bullets have been fir
 \newpage
 
 ```{r, echo=FALSE, message=FALSE, cache=FALSE}
-## DONE put actual and predicted in the tables in ch 3
-## DONE switch to scientific notation (or < .0001) for all p-values
-## DONE move the KS test table to the appendix for that one paper
-## DONE Switch single ks test to a parenthetical in the text
-## DONE Facet by sensitivity and specificity, 3 lines for each
-## DONE Start that plot at 100%, label it "% land used" - call it "left fixed", "middle fixed", "right fixed"
-## DONE Move histograms to the appendix
-## DONE Try without signature length?
-## DONE Take plot out of first land to land idea
-## DONE Feature expression as a function of degradation
-## DONE Take a scratched bullet we excluded, (BR9 b24?) and try to match using degraded
-## Cary data - same pics as Alan
-
 library(xtable)
 library(RMySQL)
 library(tidyverse)
@@ -65,7 +52,7 @@ To start, we introduce each feature provided in the CCF database table. Table \r
 
 ```{r, echo=FALSE, results='asis'}
 result <- my_ccf %>%
-    filter(compare_id == 4) %>%
+    filter(compare_id == 23) %>%
     head %>%
     collect %>%
     select(1:8) %>%
@@ -76,7 +63,7 @@ print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", 
 
 ```{r, echo=FALSE, results='asis'}
 result2 <- my_ccf %>%
-    filter(compare_id == 4) %>%
+    filter(compare_id == 23) %>%
     head %>%
     collect %>%
     select(9:ncol(.)) %>%
@@ -160,13 +147,6 @@ grid.arrange(p1, p2, p3, nrow = 3)
 In a typical comparison between two profiles, such as in Figure \ref{fig:roughcorfine}, the roughness correlation does not meaningfully impact the matching probability given the presence of the ccf in the model. In this figure, we see the alignment of profile 8752 with profile 136676. In this case, the waviness or the deformation pattern in the signatures is more minor, and hence the resulting roughness signature resembles the original signature more closely. These profiles match, and both ccf (0.6891) and rough_cor (0.7980) provide values indicative of matching.
 
 ```{r roughcorfine, echo=FALSE, fig.cap='Alignment of profile 8752 with profile 136676. In this case, the waviness or the deformation pattern in the signatures is more minor, and hence the resulting roughness signature resembles the original signature more closely. These profiles match, and both ccf (0.6891) and rough_cor (0.7980) provide values indicative of matching.'}
-
-## DONE TODO: Sketch out process of rough cor (show loess, etc.)
-## DONE Flip the two examples - say "roughness correlation doesnt affect matching prob" instead of "may not be needed" - but helps to identify mismatches
-## DONE Change to percentages for Table 4.10
-## Degraded: full bullet land from a lab, against a land split in half - lag max should be complete length of the other land. Either create hamby halves data and store in db, or run parameter to split in half (two parameters, a left and a right pixel) - ACTUALLY compare parameter, use signature. Make boxplot of left and right land effect. Plot of match probability of all known matches as a function of degraded percentage.
-## Talk about matching full bullets (diagnonal)
-
 br1 <- filter(bullets_smoothed, profile_id == 8752) %>%
     dplyr::select(-run_id) %>%
     rename(bullet = profile_id) %>%
@@ -228,7 +208,7 @@ con <- dbConnect(MySQL(), user = user, password = password,
 all_bullets_metadata <- dbReadTable(con, "metadata")
 my_matches <- dbReadTable(con, "matches") %>% mutate(match = 1)
 profiles <- dbReadTable(con, "profiles")
-ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == 4)
+ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == 23)
 
 CCFs_withlands <- ccf %>%
     left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%
