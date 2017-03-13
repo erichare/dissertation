@@ -52,7 +52,7 @@ To start, we introduce each feature provided in the CCF database table. Table \r
 
 ```{r, echo=FALSE, results='asis'}
 result <- my_ccf %>%
-    filter(compare_id == 23) %>%
+    filter(compare_id == 4) %>%
     head %>%
     collect %>%
     select(1:8) %>%
@@ -63,7 +63,7 @@ print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", 
 
 ```{r, echo=FALSE, results='asis'}
 result2 <- my_ccf %>%
-    filter(compare_id == 23) %>%
+    filter(compare_id == 4) %>%
     head %>%
     collect %>%
     select(9:ncol(.)) %>%
@@ -208,7 +208,7 @@ con <- dbConnect(MySQL(), user = user, password = password,
 all_bullets_metadata <- dbReadTable(con, "metadata")
 my_matches <- dbReadTable(con, "matches") %>% mutate(match = 1)
 profiles <- dbReadTable(con, "profiles")
-ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == 23)
+ccf <- dbReadTable(con, "ccf") %>% filter(compare_id == 4)
 
 CCFs_withlands <- ccf %>%
     left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%
@@ -388,7 +388,7 @@ We now turn our attention to matching degraded bullet lands, in which only fragm
 ```{r, cache=FALSE, echo=FALSE}
 load("data/rtrees.RData")
 
-ccf <- dbReadTable(con, "ccf") %>% filter(compare_id >= 4)
+ccf <- dbReadTable(con, "ccf") %>% filter(compare_id >= 4, compare_id < 23)
 compares <- dbReadTable(con, "compares")
 CCFs_withlands_degrade <- ccf %>%
     left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%

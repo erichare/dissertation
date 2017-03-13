@@ -179,7 +179,7 @@ my_ccf <- tbl(my_db, "ccf")
 
 result <- my_ccf %>% 
     filter(profile1_id == myprof$profile_id, 
-           compare_id == 23) %>%
+           compare_id == 4) %>%
     select(profile1_id, profile2_id, ccf, rough_cor, D, overlap, matches, cms, sum_peaks) %>%
     collect() %>%
     slice(5:10) %>%
