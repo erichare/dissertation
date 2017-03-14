@@ -14,6 +14,11 @@ Bullet matching is a process used to determine whether two bullets have been fir
 \newpage
 
 ```{r, echo=FALSE, message=FALSE, cache=FALSE}
+
+## TODO: More background
+## Bring up CMC, curvature, cartridge cases
+## SAM for features, probabilities
+
 library(xtable)
 library(RMySQL)
 library(tidyverse)

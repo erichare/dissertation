@@ -522,9 +522,11 @@ with suitably defined limits for the summation.
   \centering
 ```{r ccf, echo=FALSE, fig.width = 8, fig.height = 3, out.width = '.65\\textwidth'}
 lag <- ccf$lag[which.max(ccf$acf)]
-qplot(x=ccf$lag, xend=ccf$lag, y = 0, yend= ccf$acf, geom="segment", colour = I("grey50")) + 
+dframe <- data.frame(lag = ccf$lag, yend=ccf$acf)
+ggplot(data = dframe) +
+  geom_segment(aes(x = lag, xend=lag, yend=yend), y = 0, colour="grey50") +
   theme_bw() + ylab("Correlation") + xlab("Lag k") +
-  geom_segment(aes(x = lag, xend = lag, y = 0, yend =  max(ccf$acf)), colour="black") + 
+  geom_segment(x = lag, xend = lag, y = 0, yend =  max(ccf$acf), colour="black") +
   scale_x_continuous(breaks = c(-100, -50, lag, 0, 50, 100),
                      minor_breaks = c(-75,-25,25, 75))
 ```
