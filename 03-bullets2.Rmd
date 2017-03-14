@@ -14,11 +14,6 @@ Bullet matching is a process used to determine whether two bullets have been fir
 \newpage
 
 ```{r, echo=FALSE, message=FALSE, cache=FALSE}
-
-## TODO: More background
-## Bring up CMC, curvature, cartridge cases
-## SAM for features, probabilities
-
 library(xtable)
 library(RMySQL)
 library(tidyverse)
@@ -45,9 +40,11 @@ my_ccf <- tbl(my_db, "ccf")
 
 # Background
 
-In Automatic Matching of Bullet Lands, we used the Hamby 252 set [@hamby:2009] to train and develop a random forest in order to provide a matching probability for two bullet lands. While the algorithm had a very strong performance on this set, some limitations were immediately clear. For instance, performance was assessed only on this single set of 35 bullets. Each of these bullets was part of controlled study, and the full lands were available for matching. While there were some data quality issues, this was still a near ideal test case for the algorithm.
+Intense scrutiny has been focused on the process of bullet matching in recent years [e.g., @giannelli:2011]. Bullet matching, the process of determining whether two bullets were fired from the same gun barrel, has traditionally been performed without meaningful determination of error rates or statistical assessments of uncertainty [@NAS:2009]. There have been certain steps towards mathematical and statistical approaches to bullet matching, including defining CMS, the Consecutively Matching Striae [@biasotti:1959], and defining a cutoff of six to separate matches from non-matches. But rigorous assessments of the applicability of such cutoffs have not to this point been described [@pcast2016].
 
-Real world applications of bullet matching often involve the recovery of fragments of bullets from the crime scene. Traditional features used in forensic examination work well for a full land, but there has been less investigation into their performance in the case of a fragmented land. For example, the CMS (Consecutively Matching Striae) [@biasotti:1959] is naturally limited by the portion of the land that can be recovered.
+Recently, much work has been done to address these shortcomings. On firing pin impressions and breech faces, @riva:2014 have described an automated algorithm using 3D images. Other examples of work in this and related areas include @petraco:2012, @chu:2011, @vorburger:2011, and others. In our approach to this problem, Automatic Matching of Bullet Lands, we used the Hamby 252 set [@hamby:2009] to train and develop a random forest in order to provide a matching probability for two bullet lands. While the algorithm had a very strong performance on this set, some limitations were immediately clear. For instance, performance was assessed only on this single set of 35 bullets. Each of these bullets was part of controlled study, and the full lands were available for matching. While there were some data quality issues, this was still a near ideal test case for the algorithm.
+
+Real world applications of bullet matching often involve the recovery of fragments of bullets from the crime scene. Traditional features used in forensic examination work well for a full land, but there has been less investigation into their performance in the case of a fragmented land. For example, the CMS is naturally limited by the portion of the land that can be recovered.
 
 In this paper, we take steps to address these and other concerns. Specifically, we begin by reviewing features from the literature, computed on pairs of bullet lands, and providing some of our own features. We show how these have been standardized to account for the portion of the land that is recovered. Once these have been standardized, we tackle two issues that were previously unaddressed in Automatic Matching of Bullet Lands. The first is the effect of the operator of the microscope on the resulting data and algorithm performance, and the second is the effect of the amount of degradation. Finally, we take a few first steps towards generalizing a matching algorithm based on land-to-land comparisons, to one based on bullet-to-bullet comparisons, as would be done in a real world application of these ideas.
 
@@ -676,6 +673,61 @@ test2 <- CCFs_withlands %>%
     left_join(test)
 
 ggplot(data = test2, aes(x = match, y = score)) +
+    geom_boxplot() +
+    theme_bw()
+```
+
+```{r scores, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.'}
+myfunc2 <- function(x, feature) {
+     x <- x %>% 
+            select_("profile1_id", "profile2_id", feature) %>%
+            spread_(key = "profile2_id", value = feature)
+        testmat <- rbind(as.matrix(x[,-1]), as.matrix(x[,-1]))
+        result <- numeric(6)
+        for (i in 1:6) {
+            result[i] <- mean(diag(testmat[-(1:6),]), na.rm = TRUE)
+            testmat <- shift.down(testmat)
+        }
+        
+        return(result)
+}
+
+test <- CCFs_withlands %>% 
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    do(ccf = myfunc2(., feature = "ccf"),
+       rough_cor = myfunc2(., feature = "rough_cor"),
+       lag = myfunc2(., feature = "lag"),
+       D = myfunc2(., feature = "D"),
+       sd_D = myfunc2(., feature = "sd_D"),
+       overlap = myfunc2(., feature = "overlap"),
+       matches = myfunc2(., feature = "matches"),
+       mismatches = myfunc2(., feature = "mismatches"),
+       cms = myfunc2(., feature = "cms"),
+       non_cms = myfunc2(., feature = "non_cms"),
+       sum_peaks = myfunc2(., feature = "sum_peaks"))
+
+hmm <- cbind(id = rep(1:nrow(test), each = 6), as.data.frame(apply(test[,7:17], 2, unlist)))
+
+test2 <- CCFs_withlands %>%
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    summarise(match = any(match)) %>%
+    ungroup() %>%
+    mutate(id = 1:nrow(.))
+
+hmm$forest <- predict(rtrees, newdata = hmm, type = "prob")[,2]
+final_hmm <- hmm %>%
+    group_by(id) %>%
+    summarise(forest = max(forest, na.rm = TRUE))
+
+final_result <- test2 %>%
+    left_join(final_hmm) %>%
+    select(-id)
+
+final_result %>% filter(match) %>% arrange(forest) %>% head
+
+xtabs(~(forest > .5)+match, data = final_result)
+
+ggplot(data = final_result, aes(x = match, y = forest)) +
     geom_boxplot() +
     theme_bw()
 ```
