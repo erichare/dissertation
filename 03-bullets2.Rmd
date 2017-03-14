@@ -677,7 +677,7 @@ ggplot(data = test2, aes(x = match, y = score)) +
     theme_bw()
 ```
 
-```{r scores, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.'}
+```{r scores, eval=FALSE, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.'}
 myfunc2 <- function(x, feature) {
      x <- x %>% 
             select_("profile1_id", "profile2_id", feature) %>%
