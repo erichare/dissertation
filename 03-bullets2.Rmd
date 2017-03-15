@@ -9,7 +9,7 @@ Eric Hare, Heike Hofmann, Alicia Carriquiry
 
 \end{center}
 
-Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by formalizing and defining a set of features, computed on pairs of bullet lands, which can be used in machine learning models to assess the probability of a match. We then use these features to perform an analysis of the two Hamby bullet sets (Set 252 and Set 44), to assess the presence of microscope operator effects in scanning. We also take some first steps to addressing the issue of degraded bullet lands, and provide a range of degradation at which the matching algorithm still performs well. Finally, we discuss generalizing land to land comparisons to full bullet comparisons.
+Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by formalizing and defining a set of features, computed on pairs of bullet lands, which can be used in machine learning models to assess the probability of a match. We then use these features to perform an analysis of the two Hamby bullet sets (Set 252 and Set 44), to assess the presence of microscope operator effects in scanning. We also take some first steps to addressing the issue of degraded bullet lands, and provide a range of degradation at which the matching algorithm still performs well. Finally, we discuss generalizing land to land comparisons to full bullet comparisons as would be used for this procedure in a criminal justice situation.
 
 \newpage
 
@@ -409,7 +409,7 @@ CCFs_withlands_plot <- CCFs_withlands_degrade
 CCFs_withlands_plot$match <- factor(CCFs_withlands_plot$match, labels = c("Known Non-Match", "Known Match"))
 ```
 
-Figure \ref{fig:senspe} gives the sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep in terms of sensitivity. In fact, the sensitivity recovers a bit for left fixed land as the land proportion declines from 50% to 25%. Meanwhile, the specificity drops more dramatically for left, middle, and right fixed degraded lands. For a more in-depth exploration into the matching probabilities, Figure \ref{fig:deghist} provides histograms of the matching probability facetted by the degradation level and known match versus known non-match. The matching probabilities suffer compared with the full lands in all cases, but the change is much less for different levels of right degradation - In other words, if we degrade the right side of the land and maintain portions of the left side, the algorithm is better able to provide matching probabilities that accurately reflect the true state of nature.
+Figure \ref{fig:senspe} gives the sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep in terms of sensitivity. In fact, the sensitivity recovers a bit for left fixed land as the land proportion declines from 50% to 25%. Meanwhile, the specificity drops more dramatically for left, middle, and right fixed degraded lands. For a more in-depth exploration into the matching probabilities, Figure \ref{fig:deghist} provides histograms of the matching probability facetted by the degradation level and known match versus known non-match. The matching probabilities suffer compared with the full lands in all cases, but the change is much less for different levels of right degradation - In other words, if we degrade the right side of the land and maintain portions of the left side, the algorithm is better able to provide matching probabilities that accurately reflect the true state of nature. Note that in our coordinate system, the left side is the "leading" edge of the bullet as it moves through the barrel.
 
 ```{r senspe, echo=FALSE, fig.cap='Sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the land proportion, but that the decline for left degradation is less steep in terms of sensitivity.'}
 result <- CCFs_withlands_degrade %>%
@@ -434,7 +434,7 @@ ggplot(result, aes(x = level, y = value, colour = fixed)) +
     xlab("Land Proportion")
 ```
 
-Figure \ref{fig:featexp} gives the feature expression for known matches, as a function of the land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed. In particular, the ccf, cms, and roughness correlation remain high even as the land degrades. Meanwhile, features that are inversely correlated with matching probability, such as D and mismatches, are most strongly expressed in the right-fixed lands.
+Figure \ref{fig:featexp} gives the feature expression for known matches, as a function of the land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed. In particular, the ccf, cms, and roughness correlation remain high even as the land percentage degrades. Meanwhile, features that are inversely correlated with matching probability, such as D and mismatches, are most strongly expressed in the right-fixed lands.
 
 ```{r featexp, echo=FALSE, fig.cap='Feature expression for known matches, as a function of land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed.'}
 feature_exp <- CCFs_withlands_degrade %>%
@@ -460,8 +460,8 @@ To come full circle, we will now attempt to match a particular land which exhibi
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{images/br9-2-4-grey.png}
-\caption{Land 4 of Bullet 2, from Barrel 9 of Hamby Set 252. It can be seen that this particular land exhibits some major tank rash.}
+\includegraphics[width=\linewidth]{images/br9-2-4-greyflip.png}
+\caption{Land 4 of Bullet 2, from Barrel 9 of Hamby Set 252. It can be seen that this particular land exhibits some major tank rash on the right half.}
 \label{fig:br924}
 \end{figure}
 
@@ -626,7 +626,7 @@ print(xtable(finaloutput, digits = c(0, 0, 4, 4), label = "tab:br924pred", capti
 
 One other area deserving further exploration is generalizing these algorithms for matching full bullets rather than indvidual lands, as would be done in a criminal justice application. One such approach is to recognize that (at least for the Hamby bullets) there should be six matching pairs of lands for any two bullets that were fired from the same gun barrel. Therefore, for each pair of bullets, we can extract the six highest matching probabilities and average them. If we do so, we obtain a clear separation as seen in Figure \ref{fig:firstscore}. No known-matches have a score below 50%, while all known non-matches have a score below 10%.
 
-A less naive approach is to exploit the rotation of the bullet. For instance, if we knew that land 1 of bullet 1 matches to land 4 of bullet 2, then we immediately know that land 2 of bullet 1 matches to land 5 of bullet 2, land 3 of bullet 1 matches to land 6 of bullet 2, etc. Hence, we can take look across six diagonals of the $6 \otimes 6$ matrix containing match probabilities. Table \ref{tab:diag} gives an example of the matrix of matching probabilities between two sets of six lands from bullets that are known matches. The matching diagonal is clear based on the high probabilities (cell $(1, 3)$, cell $(2, 4)$, cell $(3, 5)$, etc.) although it can be seen that one of the six comparisons has a very low matching probability. This procedure is based on ideas provided by @sensorfar in their bullet matching software application `SensoMatch`.
+A less naive approach is to exploit the rotation of the bullet. For instance, if we knew that land 1 of bullet 1 matches to land 4 of bullet 2, then we immediately know that land 2 of bullet 1 matches to land 5 of bullet 2, land 3 of bullet 1 matches to land 6 of bullet 2, etc. Hence, we can take look across six diagonals of the $6 \otimes 6$ matrix containing match probabilities. Table \ref{tab:diag} gives an example of the matrix of matching probabilities between two sets of six lands from bullets that are known matches. The matching diagonal is clear based on the high probabilities (cell $(1, 3)$, cell $(2, 4)$, cell $(3, 5)$, etc.) although it can be seen that one of the six comparisons has a very low matching probability. This procedure is based on the Sequence Average Maximum (SAM) by @sensorfar in their bullet matching software application `SensoMatch`.
 
 ```{r, echo=FALSE, results='asis'}
 CCFs_withlands$forest <- predict(rtrees, newdata = CCFs_withlands, type = "prob")[,2]
@@ -676,6 +676,8 @@ ggplot(data = test2, aes(x = match, y = score)) +
     geom_boxplot() +
     theme_bw()
 ```
+
+
 
 ```{r scores2, eval=FALSE, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.'}
 myfunc2 <- function(x, feature) {
