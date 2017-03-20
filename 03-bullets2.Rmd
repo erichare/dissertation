@@ -225,7 +225,7 @@ CCFs_withlands <- ccf %>%
     mutate(match = as.logical(replace(match, is.na(match), 0)))
 ```
 
-We can now train the forest using the previously defined features. We split the data into an 80% training, 20% testing framework to assess its out of sample performance, using the `caret` package [@caretpkg]. Table \ref{tab:avgforest} provides the results as a confusion matrix on the test set, averaged over ten independent random forests trained on ten random data subsets. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently (approximately 23 false negative land to land comparisons on the test set, compared with an average of less than one false positive).
+We can now train the forest using the previously defined features. We split the data into an 80% training, 20% testing framework to assess its out of sample performance, using the `caret` package [@caretpkg]. Table \ref{tab:avgforest} provides the results as a confusion matrix on the test set, averaged over ten independent random forests trained on ten random data subsets. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently (approximately 65 false negative land to land comparisons on the test set, compared with an average of less than four false positives).
 
 ```{r, echo=FALSE, results='asis'}
 includes <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
@@ -262,6 +262,8 @@ match_result_wide <- match_result %>%
     spread(key = Result, value = Count)
 
 result <- match_result %>%
+    group_by(Result, id) %>%
+    summarise(Count = sum(Count)) %>%
     group_by(Result) %>%
     summarise(Count = mean(Count))
 sens_result <- result$Count[result$Result == "True Positive"] / (result$Count[result$Result == "True Positive"] + result$Count[result$Result == "False Negative"])
