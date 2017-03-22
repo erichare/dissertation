@@ -644,7 +644,7 @@ CCFs_withlands$forest <- predict(rtrees, newdata = CCFs_withlands, type = "prob"
 
 result <- CCFs_withlands %>% 
     filter(study.x == "Hamby252", barrel.x == 3, bullet.x == 1, study.y == "Hamby252", barrel.y == 3, bullet.y == 2) %>%
-    select(profile1_id, profile2_id, forest) %>%
+    dplyr::select(profile1_id, profile2_id, forest) %>%
     spread(key = profile2_id, value = forest)
 
 print(xtable(result, digits = c(0, 0, 4, 4, 4, 4, 4, 4), label = "tab:diag", caption = "Matrix of matching probabilities between two sets of six lands from bullets that are known matches."), comment = FALSE, include.rownames = FALSE)
@@ -655,7 +655,7 @@ We derive a score by computing the bullet matching probability on each set of si
 ```{r scores, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches. It can be seen that the known matches all have scores of around 100%, while no non-match achieves a score of above 30%.'}
 myfunc <- function(x) {
      x <- x %>% 
-            select(profile1_id, profile2_id, forest) %>%
+            dplyr::select(profile1_id, profile2_id, forest) %>%
             spread(key = profile2_id, value = forest)
         testmat <- rbind(as.matrix(x[,-1]), as.matrix(x[,-1]))
         result <- numeric(6)
@@ -669,10 +669,42 @@ myfunc <- function(x) {
 test <- CCFs_withlands %>% 
     group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
     do(score = myfunc(.)) %>%
-    mutate(score = unlist(score))
+    mutate(score = unlist(score)) %>%
+    filter(study.x != study.y | barrel.x != barrel.y | bullet.x != bullet.y)
 test2 <- CCFs_withlands %>%
     group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
-    summarise(match = any(match)) %>%
+    dplyr::summarise(match = any(match)) %>%
+    left_join(test)
+
+ggplot(data = test2, aes(x = match, y = score)) +
+    geom_boxplot() +
+    theme_bw()
+```
+
+On the other hand, flipping this procedure around by assuming that a match occurs if and only if all six lands match does not discriminate quite as well, as can be seen in Figure \ref{fig:scores1}. Every known bullet non-match achieves a score of about zero, but so do about 15 known bullet matches. This method performs more poorly because our algorithm has a bigger problem with false negatives compared to false positives. Multiplying the probabilities together compounds the issue of false negatives and leads to some misidentification of matching bullets, compared with the previous procedure.
+
+```{r scores1, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches when assuming a match occurs if and only if all six lands match. Now, it can be seen that the known non-matches all have scores of around 0, while most though not all known matches achieve much higher scores.'}
+myfunc1 <- function(x) {
+     x <- x %>% 
+            dplyr::select(profile1_id, profile2_id, forest) %>%
+            spread(key = profile2_id, value = forest)
+        testmat <- rbind(as.matrix(x[,-1]), as.matrix(x[,-1]))
+        result <- numeric(6)
+        for (i in 1:6) {
+            result[i] <- prod(diag(testmat[-(1:6),]), na.rm = TRUE)
+            testmat <- shift.down(testmat)
+        }
+        return(max(result))
+}
+
+test <- CCFs_withlands %>% 
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    do(score = myfunc1(.)) %>%
+    mutate(score = unlist(score)) %>%
+    filter(study.x != study.y | barrel.x != barrel.y | bullet.x != bullet.y)
+test2 <- CCFs_withlands %>%
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    dplyr::summarise(match = any(match)) %>%
     left_join(test)
 
 ggplot(data = test2, aes(x = match, y = score)) +
