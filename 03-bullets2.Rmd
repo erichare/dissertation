@@ -9,7 +9,7 @@ Eric Hare, Heike Hofmann, Alicia Carriquiry
 
 \end{center}
 
-Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands by formalizing and defining a set of features, computed on pairs of bullet lands, which can be used in machine learning models to assess the probability of a match. We then use these features to perform an analysis of the two Hamby bullet sets (Set 252 and Set 44), to assess the presence of microscope operator effects in scanning. We also take some first steps to addressing the issue of degraded bullet lands, and provide a range of degradation at which the matching algorithm still performs well. Finally, we discuss generalizing land to land comparisons to full bullet comparisons as would be used for this procedure in a criminal justice situation.
+Bullet matching is a process used to determine whether two bullets have been fired from the same gun barrel. While traditionally a manual process performed by trained forensic examiners, recent work has been done to add statistical validity and objectivity to the procedure. In this paper, we build upon the algorithms explored in Automatic Matching of Bullet Lands [@2016arXiv160105788H] by formalizing and defining a set of features, computed on pairs of bullet lands, which can be used in machine learning models to assess the probability of a match. We then use these features to perform an analysis of the two Hamby [@hamby:2009] bullet sets (Set 252 and Set 44), to assess the presence of microscope operator effects in scanning. We also take some first steps to addressing the issue of degraded bullet lands, and provide a range of degradation at which the matching algorithm still performs well. Finally, we discuss generalizing land to land comparisons to full bullet comparisons as would be used for this procedure in a criminal justice situation.
 
 \newpage
 
@@ -42,7 +42,7 @@ my_ccf <- tbl(my_db, "ccf")
 
 Intense scrutiny has been focused on the process of bullet matching in recent years [e.g., @giannelli:2011]. Bullet matching, the process of determining whether two bullets were fired from the same gun barrel, has traditionally been performed without meaningful determination of error rates or statistical assessments of uncertainty [@NAS:2009]. There have been certain steps towards mathematical and statistical approaches to bullet matching, including defining CMS, the Consecutively Matching Striae [@biasotti:1959], and defining a cutoff of six to separate matches from non-matches. But rigorous assessments of the applicability of such cutoffs have not to this point been described [@pcast2016].
 
-Recently, much work has been done to address these shortcomings. On firing pin impressions and breech faces, @riva:2014 have described an automated algorithm using 3D images. Other examples of work in this and related areas include @petraco:2012, @chu:2011, @vorburger:2011, and others. In our approach to this problem, Automatic Matching of Bullet Lands, we used the Hamby 252 set [@hamby:2009] to train and develop a random forest in order to provide a matching probability for two bullet lands. While the algorithm had a very strong performance on this set, some limitations were immediately clear. For instance, performance was assessed only on this single set of 35 bullets. Each of these bullets was part of controlled study, and the full lands were available for matching. While there were some data quality issues, this was still a near ideal test case for the algorithm.
+Recently, work has been done to address these well-known shortcomings. On firing pin impressions and breech faces, @riva:2014 have described an automated algorithm using 3D images. Other examples of work in this and related areas include @petraco:2012, @chu:2011, @vorburger:2011, and others. In our approach to this problem, Automatic Matching of Bullet Lands, we used the Hamby 252 set [@hamby:2009] to train and develop a random forest in order to provide a matching probability for two bullet lands [@2016arXiv160105788H]. While the algorithm had a very strong performance on this set, some limitations were immediately clear. For instance, performance was assessed only on this single set of 35 bullets fired from a consecutively manufactured set of only ten gun barrels. Each of these bullets was part of controlled study, and the full lands were available for matching. While there were some data quality issues, this was still a near ideal test case for the algorithm.
 
 Real world applications of bullet matching often involve the recovery of fragments of bullets from the crime scene. Traditional features used in forensic examination work well for a full land, but there has been less investigation into their performance in the case of a fragmented land. For example, the CMS is naturally limited by the portion of the land that can be recovered.
 
@@ -50,17 +50,17 @@ In this paper, we take steps to address these and other concerns. Specifically, 
 
 # Feature Standardization
 
-To start, we introduce each feature provided in the CCF database table. Table \ref{tab:ccf1} provides the first eight columns of the CCF table, and Table \ref{tab:ccf2} provides the remaining seven columns.
+To start, we introduce a standardized version of each feature used in the matching routine. These features are computed on *aligned pairs of bullet lands* rather than individual lands. This allows us to, for instance, compute the number of matching striae. Table \ref{tab:ccf1} and Table \ref{tab:ccf2} provide an example of six land-to-land comparisons and the derived features for these comparisons. The two `profile_id` columns identify a particular land from the two Hamby datasets, and the remaining columns are the derived features for these comparisons.
 
 ```{r, echo=FALSE, results='asis'}
 result <- my_ccf %>%
     filter(compare_id == 4) %>%
     head %>%
     collect %>%
-    select(1:8) %>%
+    select(2:8) %>%
     as.data.frame
 
-print(xtable(result, digits = c(0, 0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", caption = "A sample of six land-to-land comparisons, and derived features for these comparisons."), comment = FALSE, include.rownames = FALSE)
+print(xtable(result, digits = c(0, 0, 0, 4, 4, 4, 4, 4), label = "tab:ccf1", caption = "A sample of six land-to-land comparisons, and derived features for these comparisons."), comment = FALSE, include.rownames = FALSE)
 ```
 
 ```{r, echo=FALSE, results='asis'}
@@ -74,7 +74,7 @@ result2 <- my_ccf %>%
 print(xtable(result2, digits = c(4, 4, 4, 4, 4, 4, 4, 4), label = "tab:ccf2", caption = "The remaining derived features for the previous six land-to-land comparisons."), comment = FALSE, include.rownames = FALSE)
 ```
 
-The `compare_id`, `profile1_id`, and `profile2_id` uniquely identify a particular cross-comparison between two profiles, with the given `compare_id` parameters. The remaining columns are the relevant features for the comparison. The definitions of the features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each feature are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
+The definitions of these features have been generalized to account for the possibility of handling degraded bullet conditions, where only fragments of lands can be recovered. The definitions of each feature are given below, where $f(t)$ represents the height values of the first profile, and $g(t)$ the height values of the second:
 
 - **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The Cross-Correlation function is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
 - **rough_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures. This attempts to model the roughness of the surface after removing the waviness.

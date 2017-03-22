@@ -54,8 +54,8 @@ Critical to the success of a matching algorithm is the extraction of a set of fe
 * *CCF*: Function of the optimum shift distance measuring the correlation between two profiles [@vorburger:2011]
 * *CMS*: Striated markings that line up exactly with one another without a break or dissimilarity in between them [@biasotti:1959, @thompson:2013]. This and other forensic science papers using CMS typically count a single peak as a striae, while we count peaks and valleys, so our definition typically yields CMS values about twice those commonly found in the literature.
 * *CMNS*: Striated markings that do not line up exactly with another, without matching striation between them.
-* *Matches*: The number of matches between two signatures
-* *Non-Matches*: The number of matches between two signatures
+* *Matches*: The number of matching striations between two signatures
+* *Non-Matches*: The number of unmatched striations between two signatures
 * *D* = $\sqrt{\frac{1}{\text{\#}t}\sum_t \left[f(t) - g(t)\right]^2}$ where $f(t)$ and $g(t)$ are aligned signatures. The euclidean vertical distance between surface measurements of aligned signatures. This is a measure of the total variation between two profiles [@clarkson1933definitions].
 * *S*: The sum $S$ of average absolute heights of matched extrema: for each of the two matched stria, compute the average of the absolute heights of the peaks or valleys. $S$ is then defined as the sum of all these averages.  
 
