@@ -736,7 +736,7 @@ ggplot(data=subset(bstats, !flagged)) +
   xlab("maximum CMS") + ylab("Proportion")
 ```
 \end{minipage}
-\caption{\label{fig:cms}Distribution of maximal CMS (left). Conditional barchart [@hummel] on the right: heights show probability of match/non-match given a specific CMS. All land-to-land comparisons with at least 13 CMS are matches.}
+\caption{\label{fig:cms}Distribution of maximal CMS (left). Conditional barchart (Hummel 1996) on the right: heights show probability of match/non-match given a specific CMS. All land-to-land comparisons with at least 13 CMS are matches.}
 \end{figure}
 
 There are two things that should be noted at this point: the automated algorithm finds a relatively high number of CMS even for non-matches. On average, there are `r mean(bstats$CMS[!bstats$match], na.rm=T)` maximal CMS between known non-matches (with a standard deviation of `r sd(bstats$CMS[!bstats$match])`). Known matches share on average `r mean(bstats$CMS[bstats$match])` maximal CMS, with a standard deviation of `r sd(bstats$CMS[bstats$match])`. While the probability for a match increases with the number of maximal CMS, a large number of maximal CMS by itself is not indicative of a match, as was previously pointed out by @miller:1998. Figure \ref{fig:mismatch} shows a known mismatch between two lands that share twelve consecutively matched striae. Visually we can easily tell that these two lands do not match well.
@@ -1005,7 +1005,7 @@ qplot(MeanDecreaseGini,1, data=imp3, geom="point") +
         panel.grid.major.y=element_blank(), panel.grid.minor.y=element_blank()) +
   xlab("Importance (mean decrease in Gini index)")
 ```
-\caption{\label{fig:importance}Importance of features in the random forest. Importance is measured in terms of mean decrease in gini index when including the variable in a decision tree.}
+\caption{\label{fig:importance}Importance of features in the random forest. Importance is measured in terms of mean decrease in Gini index when including the variable in a decision tree.}
 \end{figure}
 
 The variables with the most predictive power are cross-correlation and the overall number of matching extrema, followed by the total depth of joint striations $S$ and total number of non-matches. CMS is found only in sixth place.
@@ -1531,7 +1531,7 @@ rtrees <- randomForest(factor(match)~., data=subset(bstats, !flagged)[,includesV
 ```
 
 \begin{table}[tbhp]
-\caption{\label{tab:importance}Table of  features derived from bullet image ordered by importance in predicting matches. Importance is measured in terms of mean decrease in gini index when including the variable in a decision tree. Averages (and standard deviations) for known matches (KM) and known non-matches (KNM) are shown in the last four columns.}
+\caption{\label{tab:importance}Table of features derived from bullet image ordered by importance in predicting matches. Importance is measured in terms of mean decrease in Gini index when including the variable in a decision tree. Averages (and standard deviations) for known matches (KM) and known non-matches (KNM) are shown in the last four columns.}
 \centering
 ```{r importance, echo=FALSE, results='asis', warning=FALSE}
 
