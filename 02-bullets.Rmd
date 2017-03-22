@@ -107,7 +107,7 @@ A procedure for bullet matching using the BulletTrax3D system is described in @r
 
 Modern automated techniques using 3D images have also been proposed by e.g. @riva:2014. However, the authors focused on cartridge cases and not bullets. This might seem like a trivial distinction, but it has implications for the development of the algorithm. The algorithm performs alignment of striae by rotation of the XY plane, which is not generalizable to bullets in which the XY plane is not flat. 
 
-Other work on 3D images has been described by @petraco:2012, who also focus on cartridge cases, as well as screwdriver striation patterns, and by others [e.g., @chu:2011, @chu:2010, @vorburger:2011}.
+Other work on 3D images has been described by @petraco:2012, who also focus on cartridge cases, as well as screwdriver striation patterns, and by others [e.g., @chu:2011, @chu:2010, @vorburger:2011].
 
 # Bullet Signatures
 
@@ -1208,7 +1208,7 @@ qplot(y, resid, data=subset(db2, x == 100), #colour=factor(x),
 ## Cross-Correlation at Multiple Heights
 
 Figure \ref{fig:crosscuts} shows a sequence of signatures for bullet 1-5 (barrel 1) that are taken at heights 50$\mu m$ apart, between 150$\mu m$  and 400$\mu m$. These are compared to the signature at a height of 100$\mu m$. Initially, this comparison constitutes an almost perfect match between the two signatures. However, the match quickly deteriorates with increasing distance between the heights at which signatures are extracted.  Only if signatures are from heights within 150$\mu m$ do we get a good visual match even when we know that the same bullet surface is being used. 
-Given that we have to expect some variation in nominally the same height values due to (manual) alignments in microscopes, we should take height values into account in the automatic matching routine by evaluating matches at several heights. 
+Given that we have to expect some minor variation in the same height values due to (manual) alignments in microscopes, we should take height values into account in the automatic matching routine by evaluating matches at several heights. 
 \begin{figure}[hbtp]
   \centering
 ```{r crosscuts-vary, echo=FALSE, fig.width = 12, fig.height = 7, out.width = '\\textwidth', warning = FALSE}
