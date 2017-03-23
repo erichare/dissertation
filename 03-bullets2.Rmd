@@ -27,7 +27,7 @@ library(matrixcalc)
 dbname <- "bullets"
 user <- "buser"
 password <- readLines("buser_pass.txt")
-host <- "50.81.214.252"
+host <- "127.0.0.1"
 port <- 3306
 
 my_db <- src_mysql(dbname, host, port, user, password)
