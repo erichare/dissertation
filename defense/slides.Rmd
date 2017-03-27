@@ -309,9 +309,7 @@ Features are extracted from each land-to-land comparison:
 
 https://isu-csafe.stat.iastate.edu/shiny/bulletr/
 
-```{r bullets-app, echo=FALSE, fig.pos='H'}
-knitr::include_graphics("images/bullets_app.png")
-```
+<img src="images/bullets_app.png" width="500">
 
 ## Previous Future Work
 
@@ -332,3 +330,5 @@ Special thanks to Alan Zheng at the National Institute of Standards and Technolo
 - My Website: https://erichare.me
 
 Any Questions?
+
+## Bibliography
