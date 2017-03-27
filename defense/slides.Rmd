@@ -1,0 +1,334 @@
+---
+title: "Statistical Methods for Bullet Matching"
+author: "Eric Riemer Hare"
+date: "April 5th, 2017"
+output: 
+    rmdshower::shower_presentation:
+        ratio: 4x3
+bibliography: references.bib
+---
+
+## Statistical Methods for Bullet Matching { .white }
+
+<img src="images/crime.jpg" class="cover">
+
+<p class="white">
+Eric Hare<br />
+Iowa State University<br />
+April 5th, 2017
+</p>
+
+# Background
+
+## About Me
+
+- Graduated in 2008 from Snohomish High School in Snohomish, WA (1 Hour Northeast of Seattle)
+- Bachelor of Science with a major in Statistics (University of Washington, June 2012)
+- Bachelor of Science in Computer Engineering (University of Washington, June 2012)
+- Began graduate studies at Iowa State University in August 2012
+- Master of Science in Statistics (Iowa State University, 2014)
+- Declared Co-Major in Statistics and Computer Science, 2014
+- Accepted a job as Chief Data Scientist at Omni Analytics Group
+
+## Publications
+
+- Hare, E., Hofmann, H., and Carriquiry, A., **Automatic Matching of Bullet Lands**. Submitted to AoAS
+- Hare, E., and Kaplan, A., **Introductory Statistics with intRo**. Accepted by JCGS
+- Hare, E., Buja, A., and Hofmann, H., **Manipulation of Discrete Random Variables with discreteRV**. R Journal Vol. 7 Iss. 1 (2015)
+- Sieber, T., Hare, E., Hofmann, H., and Treppel, M., **Biomathematical description of synthetic Peptide libraries**. PLOS One Vol. 10 Iss. 6 (2015)
+- Kaplan, A., and Hare, E., Putting Down Roots: **A Graphical Exploration of Community Attachment** (Accepted in Computational Statistics)
+- Kaplan, A., Hare, E., Hofmann, H., and Cook, D., **Can you buy a president? Politics after the Tillman Act**. CHANCE Vol. 27 Iss. 1 (2014)
+
+## Awards
+
+- ASA Imaging Section Student Paper Award, Automatic Matching of Bullet Lands, Received 2016
+- Ron Wasserstein Award for Best Contributed Paper in Statistical Education, Introductory Statistics with intRo, Received 2015
+- ASA Computing Section Student Paper Award, Introductory Statistics with intRo, Received 2015
+- Kempthorne Award for Best Student in Linear Models, Received 2013
+- ASA Data Exposition - 1st Place, Received 2013
+
+## Dissertation Outline
+
+**Statistical Methods for Bullet Matching**
+
+Papers:
+
+1. Automatic Matching of Bullet Lands
+2. Bullet Land Feature Analysis
+3. A Modern Bullet Matching Application
+
+# Dissertation Chapter One
+
+## Automatic Matching of Bullet Lands
+
+![](images/bullet.jpg)
+
+<p class="black">
+Eric Hare, Heike Hofmann, Alicia Carriquiry<br/>
+Center for Statistics and Applications in Forensic Evidence (CSAFE)<br/>
+</p>
+
+```{r,echo=FALSE, message=FALSE,warning=FALSE}
+library(bulletr)
+library(ggplot2)
+library(knitr)
+```
+
+## Goal
+
+- We wish to determine whether two bullets were fired from the same gun barrel
+- Striation patterns, or individual characteristics, are unique to barrels and fairly stable (Xie 2009)
+- Forensic Examiners shoot bullets from guns of suspects, compare it to bullet recovered from crime scene
+
+![](images/striations.jpg)
+
+## Current Practice
+
+- Traditionally, the bullets are placed under comparison microscopes and manually aligned by forensic scientists so that they can be compared
+- (Arbitrary) Thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae to declare a match, @nichols:2003)
+- However, this has traditionally been less than statistical and such practices have come under fire in the courtroom [@giannelli:2011]
+
+The problems culminated in a 2009 NAS report which found *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing."* [@NAS:2009]
+
+## PCAST Report
+
+From a September 2016 report by the President’s Council of Advisors on Science and Technology (PCAST) titled **Forensic Science in Criminal Courts: Ensuring Scientific Validity of Feature-Comparison Methods** [@pcast2016]:
+
+    A second—and more important—direction is (as with latent print analysis) 
+    to convert firearms analysis from a subjective method to an objective 
+    method. This would involve developing and testing image-analysis 
+    algorithms for comparing the similarity of tool marks on bullets. [...] 
+    In a recent study, researchers used images from an earlier study to 
+    develop a computer-assisted approach to match bullets that minimizes 
+    human input [338].
+
+338: Hare, E., Hofmann, H., and A. Carriquiry. “Automatic matching of bullet lands.” Unpublished paper, available at: arxiv.org/pdf/1601.05788v2.pdf.
+
+## Our Approach
+
+- Using a *reference database* of 3D bullet scans, compute distributional differences between **known matches** (bullets known to be fired from the same gun barrel), and **known non-matches** (bullets known to be fired from different barrels)
+- Derive a set of features which separate these two classes
+- Use the features to train a statistical model
+- Predict on unknown pairs of bullets the probability of being a match
+
+The key to this approach is the *reference database*...
+
+## James Hamby Study
+
+- Ten consecutively rifled Ruger P-85 pistol barrels used to fire 20 "known" test bullets and 15 "unknown" bullets for comparison [@hamby:2009]
+- Sets of 35 bullets sent to 507 Forensic Examiners for examination
+- 0 false positive identifications, 8 inconclusive results (out of 7605)
+- Can an automated algorithm do as well?
+
+```{r, eval=FALSE}
+plot3D.x3p.file(read_x3p("../images/Hamby (2009) Barrel/bullets/Br1 Bullet 1-5.x3p"),
+plot.type = "surface")
+```
+    
+## Data Format
+
+- 3D topographical images of each bullet
+- x3p format, array of surface measurements at the micrometer level
+- R package *x3pr* available for working with these images (Nicholas Petraco, John Jay College, @x3pr)
+- R package *bulletr* [@bulletr] with a more streamlined image reading routine and additional statistical functionality
+- Each bullet is a set of 6 land-to-land scans
+
+![](images/bullet12.jpg)
+
+## Step One: Extract a Profile
+
+We need to choose a location (height) of the bullet at which to extract a profile. To do so, we optimize the  **CCF** [@vorburger:2011]:
+
+1. Extract a profile near the base of the bullet, call this value $d_0$.
+2. Take a fixed step $d$ and extract at $d + d_0$.
+3. Check the maximum cross correlation (CCF) between the signature at $d_0$ and at $d + d_0$.
+4. If this CCF exceeds a threshold $c$, choose $d_0$ as the signature
+5. Otherwise, repeat steps 2 to 4 for $d$, $2d$, $3d$, ... until the threshold is achieved.
+6. If the threshold is not achieved, flag the land for further investigation.
+
+Parameters: $d = 25\mu m, d_0 = 25\mu m, c = 0.9$
+
+## Step One (Continued)
+
+```{r, warning=FALSE}
+br111 <- get_crosscut("images/Br1 Bullet 1-5.x3p", x = 243.75)
+
+qplot(y, value, data = br111) + theme_bw()
+```
+
+## Step Two: Remove Shoulders
+
+The striations that identify a bullet to a gun barrel are located in the land impression areas [@xie:2009].
+
+1. At a fixed height $x$ extract a bullet's profile (previous figure, with $x = 243.75\mu m$).
+2. For each $y$ value, smooth out any deviations occurring near the minima by applying a rolling average with a pre-set \emph{smoothing factor} $s$.
+3. For each smoothed $y$ value, compute another rolling average using the same smoothing factor $s$ as above.
+4. Determine the location of the peak of the shoulders by finding the first and last doubly-smoothed value $y_i$ that is the maximum within its smoothing window.
+
+Parameters: $s = 35\mu m$
+
+## Identifying Shoulders (Easy)
+
+```{r, message=FALSE, warning=FALSE}
+br111.groove <- get_grooves(br111)
+br111.groove$plot
+```
+
+## Identifying Shoulders (Challenging)
+
+```{r, message=FALSE, warning=FALSE}
+result2 <- get_grooves(get_crosscut("../images/Hamby (2009) Barrel/bullets/Br1 Bullet 1-6.x3p"))
+result2$plot
+```
+
+## Step Three: Fit Loess Regression
+
+Local weighted scatterplot smoothing [@cleveland:1979] - Fits a low-degree polynomial to a small subset of the data, weighting values near the point to be estimated more strongly. 
+
+```{r, warning=FALSE, fig.height=3, message=FALSE}
+br111.loess <- fit_loess(br111, br111.groove)
+br111.loess$fitted
+```
+
+## Step Four: Get the Residuals
+
+Deviations from the loess fit should represent the imperfections (striations) on the bullet. Hence, we extract the residuals from the model.
+
+```{r, warning=FALSE, fig.height=4}
+br111.loess$resid
+```
+
+## Step Five: Peaks and Valleys
+
+As with detecting the shoulders, we can smooth the deviations and compute derivatives to identify peaks and valleys in the signature.
+
+```{r, warning=FALSE, fig.height=4}
+br111.peaks <- get_peaks(br111.loess$data)
+br111.peaks$plot
+```
+
+## Step Six: Bullet Alignment
+
+The previous five steps are performed for each bullet land. But now we wish to extract features for cross comparisons of bullet lands.
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(dplyr)
+
+mypaths <- c("images/Br1 Bullet 1-5.x3p", "images/Br1 Bullet 2-1.x3p")
+my_bullets <- lapply(mypaths, function(x) {
+    result <- read_x3p(x)
+    result[[3]] <- x
+    names(result)[3] <- "path"
+        
+    return(result)
+})
+bullets_processed <- lapply(my_bullets, function(bul) {
+    processBullets(bullet = bul, name = bul$path, x = 100)
+})
+names(bullets_processed) <- mypaths
+
+bullets_smoothed <- bullets_processed %>% bind_rows %>% bulletSmooth
+
+bAlign = bulletAlign(bullets_smoothed)
+lofX <- bAlign$bullet  
+
+b12 <- unique(bullets_smoothed$bullet)
+
+peaks1 <- get_peaks(subset(lofX, bullet == b12[1]), smoothfactor = 25)
+peaks2 <- get_peaks(subset(lofX, bullet == b12[2]), smoothfactor = 25)
+peaks1$lines$bullet <- b12[1]
+peaks2$lines$bullet <- b12[2]
+peaks <- rbind(peaks1$lines, peaks2$lines)
+
+ggplot() + theme_bw() +
+    geom_rect(aes(xmin=xmin, xmax=xmax, fill=factor(type)), ymin=-6, ymax=6, 
+              data=peaks,  alpha=0.2) +
+    geom_vline(aes(xintercept=extrema, colour=factor(type)), 
+               data= peaks, alpha=0.7) +
+    scale_colour_brewer(palette="Set2") + 
+    scale_fill_brewer(palette="Set2") +
+    theme(legend.position="none") + 
+    facet_grid(bullet~.) +
+    geom_line(aes(x=y, y=l30, group=bullet), data=lofX) +
+    ylab(expression(paste("Signatures (in ",mu,"m)", sep=""))) 
+```
+
+## Step Six (Continued)
+
+```{r, echo=FALSE, warning=FALSE}
+peaks1$lines$bullet <- b12[1]
+peaks2$lines$bullet <- b12[2]
+
+lines <- striation_identify(peaks1$lines, peaks2$lines)
+
+ggplot() + 
+  geom_rect(aes(xmin = xmin, xmax = xmax, fill=factor(type)), ymin = -6, ymax=6.5,  data = lines, alpha=0.2, show.legend = FALSE) +
+  theme(legend.position="bottom") +
+  geom_text(aes(x = meany), y= -5.5, label= "x", data = subset(lines, !match)) +
+  geom_text(aes(x = meany), y= -5.5, label= "o", data = subset(lines, match)) +
+  ylim(c(-6,6.5)) + theme_bw() +
+  geom_line(data=lofX, aes(x=y, y=l30, group=bullet, linetype=bullet)) +
+  scale_linetype_discrete("") +
+  scale_colour_manual("", values=cols) +
+  scale_fill_brewer("", palette="Set2", na.value=alpha("grey60", 0.5)) +
+    theme(legend.position = c(1,1.1), legend.justification=c(1,1),
+        legend.background = element_rect(fill=alpha('white', 0.4))) + 
+  ylab(expression(paste("Signatures (in ",mu,"m)", sep=""))) +
+  xlab("y")
+```
+
+## Step Six: Extract Features
+
+Features are extracted from each land-to-land comparison:
+
+- **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The CCF is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
+- **rough_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures.
+- **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = 1/n \times \sum_t (f(t) - g(t))^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
+
+## More Features
+
+- **matches** (per mm) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **mismatches** (per mm) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **cms** (per mm) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
+- **non_cms** (per mm) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **sum_peaks** (per mm) is the the sum of the average heights of matched striae.
+
+## Distribution of Features
+
+<img src="images/density-overview-1.png" width="750">
+
+## Step Seven: Random Forest
+
+<img src="images/forest-1.png" width="750">
+
+## Feature Importance
+
+<img src="images/importance-1.png" width="750">
+
+## Web Application
+
+https://isu-csafe.stat.iastate.edu/shiny/bulletr/
+
+```{r bullets-app, echo=FALSE, fig.pos='H'}
+knitr::include_graphics("images/bullets_app.png")
+```
+
+## Previous Future Work
+
+Verbatim from September:
+
+- We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of 35 bullets
+- There is likely an effect from the equipment used to scan the bullets, or the person performing the scan, and this should be accounted for
+- We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications (degraded bullets)
+- This future work will be part of a follow-up paper, in progress.
+
+We have steps to address each of these concerns...
+
+## Thank You
+
+Special thanks to Alan Zheng at the National Institute of Standards and Technology for maintaining the NIST Ballistics Toolmark Research Database and providing many useful suggestions for our algorithm.
+
+- My GitHub: https://github.com/erichare
+- My Website: https://erichare.me
+
+Any Questions?
