@@ -305,12 +305,6 @@ Features are extracted from each land-to-land comparison:
 
 <img src="images/importance-1.png" width="750">
 
-## Web Application
-
-https://isu-csafe.stat.iastate.edu/shiny/bulletr/
-
-<img src="images/bullets_app.png" width="500">
-
 ## Previous Future Work
 
 Verbatim from September:
@@ -321,6 +315,148 @@ Verbatim from September:
 - This future work will be part of a follow-up paper, in progress.
 
 We have steps to address each of these concerns...
+
+## Data Limitation
+
+NIST has provided some more data:
+
+1. Hamby (Set 44) - These are the same barrels that were used for the Hamby study, but the bullets were scanned by a different person which allows us to provide an initial assessment of operator or scan quality effects
+2. Cary Persistence - Repeated test fires from a single gun barrel
+3. Our own microscope - We have installed a Sensofar 3D imaging microscope at Iowa State, and will soon begin a controlled study with numerous barrels and bullets.
+
+## Feature Standardization
+
+To begin to tackle the degraded bullet problem, we need to standardize features by the length of the recovered land.
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE, fig.height=3}
+library(dplyr)
+
+mypaths <- c("images/Br1 Bullet 1-5.x3p", "images/Br1 Bullet 2-1.x3p")
+my_bullets <- lapply(mypaths, function(x) {
+    result <- read_x3p(x)
+    result[[3]] <- x
+    names(result)[3] <- "path"
+        
+    return(result)
+})
+bullets_processed <- lapply(my_bullets, function(bul) {
+    processBullets(bullet = bul, name = bul$path, x = 100)
+})
+names(bullets_processed) <- mypaths
+
+bullets_smoothed <- bullets_processed %>% bind_rows %>% bulletSmooth
+
+bAlign = bulletAlign(bullets_smoothed)
+lofX <- bAlign$bullet  
+
+b12 <- unique(bullets_smoothed$bullet)
+
+peaks1 <- get_peaks(subset(lofX, bullet == b12[1]), smoothfactor = 25)
+peaks2 <- get_peaks(subset(lofX, bullet == b12[2]), smoothfactor = 25)
+peaks1$lines$bullet <- b12[1]
+peaks2$lines$bullet <- b12[2]
+peaks <- rbind(peaks1$lines, peaks2$lines)
+
+ggplot() + theme_bw() +
+    geom_rect(aes(xmin=xmin, xmax=xmax, fill=factor(type)), ymin=-6, ymax=6, 
+              data=peaks,  alpha=0.2) +
+    geom_vline(aes(xintercept=extrema, colour=factor(type)), 
+               data= peaks, alpha=0.7) +
+    scale_colour_brewer(palette="Set2") + 
+    scale_fill_brewer(palette="Set2") +
+    theme(legend.position="none") + 
+    facet_grid(bullet~.) +
+    geom_line(aes(x=y, y=l30, group=bullet), data=lofX) +
+    ylab(expression(paste("Signatures (in ",mu,"m)", sep=""))) 
+```
+
+Matches = 27, Matches per mm = 14.72
+
+## True Degraded Case
+
+By standardizing the features, we don't penalize the degraded case as in the first revision of our algorithm:
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE, fig.height=3}
+library(dplyr)
+
+mypaths <- c("images/Br1 Bullet 1-5.x3p", "images/Br1 Bullet 2-1.x3p")
+my_bullets <- lapply(mypaths, function(x) {
+    result <- read_x3p(x)
+    result[[3]] <- x
+    names(result)[3] <- "path"
+        
+    return(result)
+})
+bullets_processed <- lapply(my_bullets, function(bul) {
+    processBullets(bullet = bul, name = bul$path, x = 100)
+})
+names(bullets_processed) <- mypaths
+
+bullets_smoothed <- bullets_processed %>% bind_rows %>% bulletSmooth %>% filter((y > 0 & y < 1000 & bullet == "images/Br1 Bullet 2-1.x3p") | bullet == "images/Br1 Bullet 1-5.x3p")
+
+bAlign = bulletAlign(bullets_smoothed)
+lofX <- bAlign$bullet  
+
+b12 <- unique(bullets_smoothed$bullet)
+
+peaks1 <- get_peaks(subset(lofX, bullet == b12[1]), smoothfactor = 25)
+peaks2 <- get_peaks(subset(lofX, bullet == b12[2]), smoothfactor = 25)
+peaks1$lines$bullet <- b12[1]
+peaks2$lines$bullet <- b12[2]
+peaks <- rbind(peaks1$lines, peaks2$lines)
+
+ggplot() + theme_bw() +
+    geom_rect(aes(xmin=xmin, xmax=xmax, fill=factor(type)), ymin=-6, ymax=6, 
+              data=peaks,  alpha=0.2) +
+    geom_vline(aes(xintercept=extrema, colour=factor(type)), 
+               data= peaks, alpha=0.7) +
+    scale_colour_brewer(palette="Set2") + 
+    scale_fill_brewer(palette="Set2") +
+    theme(legend.position="none") + 
+    facet_grid(bullet~.) +
+    geom_line(aes(x=y, y=l30, group=bullet), data=lofX) +
+    ylab(expression(paste("Signatures (in ",mu,"m)", sep=""))) 
+```
+
+Matches = 8, Matches per mm = 11.42
+
+## Degraded Bullets
+
+Simulation Study:
+
+## Operator Effects
+
+## From Lands to Bullets
+
+## Database
+
+## Structure
+
+## Data
+
+## Runs
+
+## Metadata
+
+## Profiles
+
+## Signatures
+
+## Compares
+
+## CCFs
+
+## Front-End Web Application
+
+https://isu-csafe.stat.iastate.edu/shiny/bulletr/
+
+<img src="images/frontapp1.png" width="500">
+
+## Back-End Web Application
+
+https://isu-csafe.stat.iastate.edu/shiny/bullets/
+
+<img src="images/backapp1.png" width="500">
 
 ## Thank You
 
