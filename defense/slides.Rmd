@@ -422,29 +422,120 @@ Matches = 8, Matches per mm = 11.42
 
 ## Degraded Bullets
 
-Simulation Study:
+**Simulation Study**:
+
+1. Three types of Degradation:
+    a. Left Fixed - The left portion of the land (leading shoulder) is recoverable
+    b. Middle Fixed - The middle portion of the land is recoverable
+    c. Right Fixed - The right portion of the land (trailing shoulder) is recoverable
+2. Six Degradation Levels: 100% (Fully recovered), 87.5% Recovered, 75% Recovered, 62.5% Recovered, 50% Recovered, 25% Recovered
+    
+## Simulation Caveats
+
+We simulated the degradation of the **processed signatures** rather than simulating a degraded surface.
+
+This means that the recovered signature may have been slightly influenced by points that were removed in the simulation, though this effect is likely to be minor
+
+## Simulation Results
+
+<img src="images/senspe-1.pdf" width="750">
+
+## Feature Expression
+
+<img src="images/featexp-1.pdf" width="750">
+
+## Testing this Finding
+
+This confirms a NIST theory that the leading shoulder of the bullet better expresses striations as it travels through the barrel. To further test this, we can attempt to match a previously excluded land (due to severe tank rash) to its known match.
+
+<img src="images/br9-2-4-greyflip.png" width="500">
+
+## Br924 Results
+
+Extracting the ideal signature and then simulating a left-fixed 50% degradation scenario yields the following:
+
+<img src="images/degtable.png" width="500">
 
 ## Operator Effects
 
+With two studies, Hamby 252 and Hamby 44, there are three sets of cross comparisons we perform:
+
+1. Hamby 252 to Hamby 252
+2. Hamby 252 to Hamby 44
+3. Hamby 44 to Hamby 44
+
+Given that the barrels are the same in each case, assuming perfect scans and no microscope operator effects, each set of comparisons should be indistinguishable from one another.
+
+## Feature Expression by Study
+
+<img src="images/ccfstudy-1.pdf" width="400">
+
+## Ideal Cross-Section by Study
+
+<img src="images/crosscompare-1.pdf" width="750">
+
 ## From Lands to Bullets
+
+In a real world forensic application of these algorithms, the true experimental unit is the **bullet** rather than the **land**
+
+- We focused on land-to-land comparisons to make the task more difficult
+- However, we can generalize to full bullets in a few different ways (with varying success)
+
+## Bullet Method 1
+
+Idea: Two bullets $b_1$ and $b_2$ are matches if and only if some land $l_{b1}$ from $b_1$ matches some land $l_{b2}$ from bullet 2.
+Corollary: Two bullets are non-matches if and only if no land from $b_1$ matches a land from $b_2$.
+Assumptions: Each land on a bullet is independent of each other land
+
+$$
+\begin{align}
+P(M) &= 1 - P(NM) \\
+     &= 1 - (P(NM1) \times P(NM2) \times ... \times P(NM6)) \\
+     &= 1 - ((1 - P(M1)) \times (1 - P(M2)) \times ... \times (1 - P(M6)))
+\end{align}
+$$
+
+## Exploiting the Alignment
+
+The true alignment of the lands exists along one of 6 diagonals:
+
+<img src="images/diag.png" width="750">
+
+Therefore, we can multiply the probabilities across the diagonals and take the highest for each bullet to bullet comparison [@sensorfar]
+
+## Bullet to Bullet Results
+
+<img src="images/scores-1.pdf" width="750">
+
+## Bullet Method 2
+
+Assuming bullets match if and only if all lands match:
+
+<img src="images/scores1-1.pdf" width="500">
+
+Performance is weaker in this case because our algorithm is much more likely to make false negatives compared to false positives.
+
+## Software Design Principles
+
+In Designing Modular Software: A Case Study in Introductory Statistics, we outlined several software design principles:
+
+1. Modularity
+2. Reproducibility
+3. Extensibility
+4. Residing on the Web
+
+To truly open these bullet matching methods to the scientific community, we had to focus on a system which adheres to these principles
 
 ## Database
 
+The underlying technology we've created since September is a brand new database which modularizes the algorithm and allows collaboration on individual components. The database:
+
+1. Stores all parameters used in each run of the algorithm
+2. Keeps track of intermediate results (profiles, signatures, etc.)
+3. Is structured to allow seamless running and re-running of the algorithm
+4. Allows researchers to extract the relevant components for their own research
+
 ## Structure
-
-## Data
-
-## Runs
-
-## Metadata
-
-## Profiles
-
-## Signatures
-
-## Compares
-
-## CCFs
 
 ## Front-End Web Application
 
