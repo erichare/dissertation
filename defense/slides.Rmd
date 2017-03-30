@@ -18,35 +18,6 @@ Iowa State University<br />
 April 5th, 2017
 </p>
 
-# Background
-
-## About Me
-
-- Graduated in 2008 from Snohomish High School in Snohomish, WA (1 Hour Northeast of Seattle)
-- Bachelor of Science with a major in Statistics (University of Washington, June 2012)
-- Bachelor of Science in Computer Engineering (University of Washington, June 2012)
-- Began graduate studies at Iowa State University in August 2012
-- Master of Science in Statistics (Iowa State University, 2014)
-- Declared Co-Major in Statistics and Computer Science, 2014
-- Accepted a job as Chief Data Scientist at Omni Analytics Group
-
-## Publications
-
-- Hare, E., Hofmann, H., and Carriquiry, A., **Automatic Matching of Bullet Lands**. Submitted to AoAS
-- Hare, E., and Kaplan, A., **Introductory Statistics with intRo**. Accepted by JCGS
-- Hare, E., Buja, A., and Hofmann, H., **Manipulation of Discrete Random Variables with discreteRV**. R Journal Vol. 7 Iss. 1 (2015)
-- Sieber, T., Hare, E., Hofmann, H., and Treppel, M., **Biomathematical description of synthetic Peptide libraries**. PLOS One Vol. 10 Iss. 6 (2015)
-- Kaplan, A., and Hare, E., Putting Down Roots: **A Graphical Exploration of Community Attachment** (Accepted in Computational Statistics)
-- Kaplan, A., Hare, E., Hofmann, H., and Cook, D., **Can you buy a president? Politics after the Tillman Act**. CHANCE Vol. 27 Iss. 1 (2014)
-
-## Awards
-
-- ASA Imaging Section Student Paper Award, Automatic Matching of Bullet Lands, Received 2016
-- Ron Wasserstein Award for Best Contributed Paper in Statistical Education, Introductory Statistics with intRo, Received 2015
-- ASA Computing Section Student Paper Award, Introductory Statistics with intRo, Received 2015
-- Kempthorne Award for Best Student in Linear Models, Received 2013
-- ASA Data Exposition - 1st Place, Received 2013
-
 ## Dissertation Outline
 
 **Statistical Methods for Bullet Matching**
@@ -57,22 +28,7 @@ Papers:
 2. Bullet Land Feature Analysis
 3. A Modern Bullet Matching Application
 
-# Dissertation Chapter One
-
-## Automatic Matching of Bullet Lands
-
-![](images/bullet.jpg)
-
-<p class="black">
-Eric Hare, Heike Hofmann, Alicia Carriquiry<br/>
-Center for Statistics and Applications in Forensic Evidence (CSAFE)<br/>
-</p>
-
-```{r,echo=FALSE, message=FALSE,warning=FALSE}
-library(bulletr)
-library(ggplot2)
-library(knitr)
-```
+# Dissertation Chapter One: Background
 
 ## Goal
 
@@ -104,6 +60,23 @@ From a September 2016 report by the President’s Council of Advisors on Science
 
 338: Hare, E., Hofmann, H., and A. Carriquiry. “Automatic matching of bullet lands.” Unpublished paper, available at: arxiv.org/pdf/1601.05788v2.pdf.
 
+# Dissertation Chapter Two
+
+## Automatic Matching of Bullet Lands
+
+![](images/bullet.jpg)
+
+<p class="black">
+Eric Hare, Heike Hofmann, Alicia Carriquiry<br/>
+Center for Statistics and Applications in Forensic Evidence (CSAFE)<br/>
+</p>
+
+```{r,echo=FALSE, message=FALSE,warning=FALSE}
+library(bulletr)
+library(ggplot2)
+library(knitr)
+```
+
 ## Our Approach
 
 - Using a *reference database* of 3D bullet scans, compute distributional differences between **known matches** (bullets known to be fired from the same gun barrel), and **known non-matches** (bullets known to be fired from different barrels)
@@ -134,6 +107,12 @@ plot.type = "surface")
 - Each bullet is a set of 6 land-to-land scans
 
 ![](images/bullet12.jpg)
+
+## Front-End Web Application
+
+https://isu-csafe.stat.iastate.edu/shiny/bulletr/
+
+<img src="images/frontapp1.png" width="500">
 
 ## Step One: Extract a Profile
 
@@ -282,7 +261,7 @@ ggplot() +
 Features are extracted from each land-to-land comparison:
 
 - **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The CCF is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
-- **rough_cor** (%) is a new feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures.
+- **rough_cor** (%) is a feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures.
 - **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = 1/n \times \sum_t (f(t) - g(t))^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
 
 ## More Features
@@ -305,24 +284,7 @@ Features are extracted from each land-to-land comparison:
 
 <img src="images/importance-1.png" width="750">
 
-## Previous Future Work
-
-Verbatim from September:
-
-- We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of 35 bullets
-- There is likely an effect from the equipment used to scan the bullets, or the person performing the scan, and this should be accounted for
-- We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications (degraded bullets)
-- This future work will be part of a follow-up paper, in progress.
-
-We have steps to address each of these concerns...
-
-## Data Limitation
-
-NIST has provided some more data:
-
-1. Hamby (Set 44) - These are the same barrels that were used for the Hamby study, but the bullets were scanned by a different person which allows us to provide an initial assessment of operator or scan quality effects
-2. Cary Persistence - Repeated test fires from a single gun barrel
-3. Our own microscope - We have installed a Sensofar 3D imaging microscope at Iowa State, and will soon begin a controlled study with numerous barrels and bullets.
+# Dissertation Chapter Three: Degraded Bullets
 
 ## Feature Standardization
 
@@ -456,6 +418,27 @@ Extracting the ideal signature and then simulating a left-fixed 50% degradation 
 
 <img src="images/degtable.png" width="500">
 
+# Thank You
+
+## Previous Future Work
+
+Verbatim from September:
+
+- We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of 35 bullets
+- There is likely an effect from the equipment used to scan the bullets, or the person performing the scan, and this should be accounted for
+- We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications (degraded bullets)
+- This future work will be part of a follow-up paper, in progress.
+
+We have steps to address each of these concerns...
+
+## Data Limitation
+
+NIST has provided some more data:
+
+1. Hamby (Set 44) - These are the same barrels that were used for the Hamby study, but the bullets were scanned by a different person which allows us to provide an initial assessment of operator or scan quality effects
+2. Cary Persistence - Repeated test fires from a single gun barrel
+3. Our own microscope - We have installed a Sensofar 3D imaging microscope at Iowa State, and will soon begin a controlled study with numerous barrels and bullets.
+
 ## Operator Effects
 
 With two studies, Hamby 252 and Hamby 44, there are three sets of cross comparisons we perform:
@@ -515,6 +498,8 @@ Assuming bullets match if and only if all lands match:
 
 Performance is weaker in this case because our algorithm is much more likely to make false negatives compared to false positives.
 
+# Dissertation Chapter Four: Bullet Application
+
 ## Software Design Principles
 
 In Designing Modular Software: A Case Study in Introductory Statistics, we outlined several software design principles:
@@ -537,17 +522,34 @@ The underlying technology we've created since September is a brand new database 
 
 ## Structure
 
-## Front-End Web Application
-
-https://isu-csafe.stat.iastate.edu/shiny/bulletr/
-
-<img src="images/frontapp1.png" width="500">
-
 ## Back-End Web Application
 
 https://isu-csafe.stat.iastate.edu/shiny/bullets/
 
 <img src="images/backapp1.png" width="500">
+
+# Dissertation Chapter Five: Future Work
+
+# About Me
+
+## Education
+
+- Graduated in 2008 from Snohomish High School in Snohomish, WA (1 Hour Northeast of Seattle)
+- Bachelor of Science with a major in Statistics (University of Washington, June 2012)
+- Bachelor of Science in Computer Engineering (University of Washington, June 2012)
+- Began graduate studies at Iowa State University in August 2012
+- Master of Science in Statistics (Iowa State University, 2014)
+- Declared Co-Major in Statistics and Computer Science, 2014
+- Accepted a job as Chief Data Scientist at Omni Analytics Group
+
+## Publications
+
+- Hare, E., Hofmann, H., and Carriquiry, A., **Automatic Matching of Bullet Lands**. Submitted to AoAS
+- Hare, E., and Kaplan, A., **Introductory Statistics with intRo**. Accepted by JCGS
+- Hare, E., Buja, A., and Hofmann, H., **Manipulation of Discrete Random Variables with discreteRV**. R Journal Vol. 7 Iss. 1 (2015)
+- Sieber, T., Hare, E., Hofmann, H., and Treppel, M., **Biomathematical description of synthetic Peptide libraries**. PLOS One Vol. 10 Iss. 6 (2015)
+- Kaplan, A., and Hare, E., Putting Down Roots: **A Graphical Exploration of Community Attachment** (Accepted in Computational Statistics)
+- Kaplan, A., Hare, E., Hofmann, H., and Cook, D., **Can you buy a president? Politics after the Tillman Act**. CHANCE Vol. 27 Iss. 1 (2014)
 
 ## Thank You
 
