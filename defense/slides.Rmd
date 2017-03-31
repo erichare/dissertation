@@ -22,11 +22,13 @@ April 5th, 2017
 
 **Statistical Methods for Bullet Matching**
 
-Papers:
+Chapters:
 
-1. Automatic Matching of Bullet Lands
-2. Bullet Land Feature Analysis
-3. A Modern Bullet Matching Application
+1. Background
+2. Automatic Matching of Bullet Lands
+3. Bullet Land Feature Analysis
+4. A Modern Bullet Matching Application
+5. Future Work
 
 # Dissertation Chapter One: Background
 
@@ -41,7 +43,7 @@ Papers:
 ## Current Practice
 
 - Traditionally, the bullets are placed under comparison microscopes and manually aligned by forensic scientists so that they can be compared
-- (Arbitrary) Thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae to declare a match, @nichols:2003)
+- (Arbitrary) match thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae, @nichols:2003)
 - However, this has traditionally been less than statistical and such practices have come under fire in the courtroom [@giannelli:2011]
 
 The problems culminated in a 2009 NAS report which found *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing."* [@NAS:2009]
@@ -261,16 +263,15 @@ ggplot() +
 Features are extracted from each land-to-land comparison:
 
 - **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The CCF is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
-- **rough_cor** (%) is a feature representing the correlation between the two signatures after performing a second LOESS smoothing stage and subtracting the result from the original signatures.
 - **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = 1/n \times \sum_t (f(t) - g(t))^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
+- **matches** is the number of matching peaks/valleys (striae) of the overlapping portion of the aligned signatures.
 
 ## More Features
 
-- **matches** (per mm) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
-- **mismatches** (per mm) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
-- **cms** (per mm) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
-- **non_cms** (per mm) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
-- **sum_peaks** (per mm) is the the sum of the average heights of matched striae.
+- **mismatches** is the number of mismatching peaks/valleys (striae) of the overlapping portion of the aligned signatures.
+- **cms** is the number of consecutively matching peaks/valleys (striae) of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
+- **non_cms** is the number of consecutive mismatching peaks/valleys (striae) of the overlapping portion of the aligned signatures.
+- **sum_peaks** is the the sum of the average heights of matched striae.
 
 ## Distribution of Features
 
@@ -381,6 +382,33 @@ ggplot() + theme_bw() +
 ```
 
 Matches = 8, Matches per mm = 11.42
+
+## Standardized Features
+
+Features are extracted from each land-to-land comparison:
+
+- **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The CCF is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
+- **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = 1/n \times \sum_t (f(t) - g(t))^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
+- **matches** (per mm) is the number of matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+
+## More Features
+
+- **mismatches** (per mm) is the number of mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **cms** (per mm) is the number of consecutively matching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
+- **non_cms** (per mm) is the number of consecutive mismatching peaks/valleys (striae) per millimeter of the overlapping portion of the aligned signatures.
+- **sum_peaks** (per mm) is the the sum of the average heights of matched striae.
+
+## Roughness Correlation
+
+Our algorithm had trouble in scenarios where large **deformations** in the two aligned signatures yielded a high CCF, when in fact the two land were not matches.
+
+We fit a new loess fit to the **average of the two signatures**, and subtract the resulting fit from the original signatures - This models the "roughness" of the bullet land while removing the "waviness"
+
+<img src="images/roughcor1.png" width="750">
+
+## Roughness Correlation (Continued)
+
+<img src="images/roughcor2.png" width="750">
 
 ## Degraded Bullets
 
@@ -498,6 +526,14 @@ Assuming bullets match if and only if all lands match:
 
 Performance is weaker in this case because our algorithm is much more likely to make false negatives compared to false positives.
 
+## Bullet Method 3: Hybrid
+
+Average the scores along the maximal diagonal
+
+<img src="images/scores10-1.pdf" width="500">
+
+We once again achieve much clearer separation.
+
 # Dissertation Chapter Four: Bullet Application
 
 ## Software Design Principles
@@ -522,6 +558,12 @@ The underlying technology we've created since September is a brand new database 
 
 ## Structure
 
+<img src="images/schema.png" width="750">
+
+## Live Demo
+
+https://isu-csafe.stat.iastate.edu/phpmyadmin
+
 ## Back-End Web Application
 
 https://isu-csafe.stat.iastate.edu/shiny/bullets/
@@ -529,6 +571,38 @@ https://isu-csafe.stat.iastate.edu/shiny/bullets/
 <img src="images/backapp1.png" width="500">
 
 # Dissertation Chapter Five: Future Work
+
+## Reference Database
+
+By far the biggest limitation of these algorithms thus far is the limited amount of available 3D scan data for bullets
+
+- Hamby Set 252 (10 Barrels)
+- Hamby Set 44 (Same 10 Barrels)
+- Cary Persistence (1 Barrel)
+
+11 unique gun barrels is not yet enough to form a true reference distribution for known matches and non-matches...
+
+...However, the structure of the database means that as soon as new data is available, the features and scores can be easily recomputed.
+
+## Parameter Optimization
+
+Some work has been done to optimize the parameter choices (smoothing factor, optimal cross-section, etc.) But there are number of parameters which were chosen without cross-validation:
+
+1. The CCF cut-off for the ideal cross section (.9)
+2. The location to start the search for the ideal cross section (25 micrometers)
+3. The roughness correlation LOESS span (.3)
+
+Further, the parameters we did optimize were chosen to be **globally optimal** rather than for each individual land or cross-comparison of lands. This was done for computational efficiency.
+
+## Operator Effects Handling
+
+While we showed the presence of operator effects, we didn't provide many recommendations for addressing this. Some possible solutions:
+
+1. Rigorous and documented procedures for scanning bullet lands
+2. Modeling the operator effect
+3. Enforcing a quality standard prior to including in the algorithm (we did this, to a degree.)
+
+As Iowa State University and NIST continue to collaborate, we will likely have several more individuals scanning and uploading surface scans of bullets, and this will need to be further investigated to ensure the algorithms withstand the real-world scenario of a wide variety of scan quality.
 
 # About Me
 

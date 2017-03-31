@@ -712,9 +712,40 @@ ggplot(data = test2, aes(x = match, y = score)) +
     theme_bw()
 ```
 
+Taking a hybrid of these two approaches, we can average the probabilities along the diagonal rather than multiplying. Doing so yields the distributions shown in Figure \ref{fig:scores10}. Now, we once again differentiate the two groups extremely well with no known non-match achieving a score above 10%, while no known match achieves a score below 40%.
+
+```{r scores10, echo=FALSE, fig.cap='Distribution of matching scores for known matches compared to known non-matches obtained by averaging the probabilities along the maximal diagonal. Once again, it can be seen that the known non-matches all have scores of around 0, but the known matches this time are well separated, with nearly all achieving scores above .5.'}
+myfunc10 <- function(x) {
+     x <- x %>% 
+            dplyr::select(profile1_id, profile2_id, forest) %>%
+            spread(key = profile2_id, value = forest)
+        testmat <- rbind(as.matrix(x[,-1]), as.matrix(x[,-1]))
+        result <- numeric(6)
+        for (i in 1:6) {
+            result[i] <- mean(diag(testmat[-(1:6),]), na.rm = TRUE)
+            testmat <- shift.down(testmat)
+        }
+        return(max(result))
+}
+
+test <- CCFs_withlands %>% 
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    do(score = myfunc10(.)) %>%
+    mutate(score = unlist(score)) %>%
+    filter(study.x != study.y | barrel.x != barrel.y | bullet.x != bullet.y)
+test2 <- CCFs_withlands %>%
+    group_by(study.x, barrel.x, bullet.x, study.y, barrel.y, bullet.y) %>%
+    dplyr::summarise(match = any(match)) %>%
+    left_join(test)
+
+ggplot(data = test2, aes(x = match, y = score)) +
+    geom_boxplot() +
+    theme_bw()
+```
+
 One more approach to the bullet matching problem would be to exploit the SAM procedure on individual features. For each diagonal in the $6 \otimes 6$ matrix, we can compute an average value for each feature in our model. This will yield six sets of feature values for all six diagonals. We can then feed all six sets of features into the random forest in order to obtain a matching probability for each, taking the highest resulting probability to hopefully locate the diagonal which provides the land to land alignment. Figure \ref{fig:scores2} provides boxplots of the matching scores using this procedure. It can be seen that while this procedure does discriminate well, it yields some false negatives (matching bullets that our forest identifies as a non-match).
 
-```{r scores2, echo=FALSE, fig.cap='Distribution of matching scores using a SAM procedure on the feature values  for known matches compared to known non-matches.'}
+```{r scores2, echo=FALSE, fig.cap='Distribution of matching scores using a SAM procedure on the feature values for known matches compared to known non-matches.'}
 myfunc2 <- function(x, feature) {
      x <- x %>% 
             select_("profile1_id", "profile2_id", feature) %>%
