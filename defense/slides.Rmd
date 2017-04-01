@@ -6,6 +6,7 @@ output:
     rmdshower::shower_presentation:
         katex: true
         ratio: 4x3
+        self_contained: false
 bibliography: references.bib
 ---
 
