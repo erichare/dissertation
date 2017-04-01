@@ -6,7 +6,6 @@ output:
     rmdshower::shower_presentation:
         katex: true
         ratio: 4x3
-        self_contained: false
 bibliography: references.bib
 ---
 
@@ -277,7 +276,7 @@ Features are extracted from each land-to-land comparison:
 
 ## Distribution of Features
 
-<img src="images/density-overview-1.pdf" width="750">
+<img src="images/density-overview-1.png" width="750">
 
 ## Step Seven: Random Forest
 
@@ -285,7 +284,7 @@ Features are extracted from each land-to-land comparison:
 
 ## Feature Importance
 
-<img src="images/featimp-1.pdf" width="750">
+<img src="images/featimp-1.png" width="750">
 
 # Degraded Bullets
 
@@ -435,11 +434,11 @@ This means that the recovered signature may have been slightly influenced by poi
 
 ## Simulation Results
 
-<img src="images/senspe-1.pdf" width="750">
+<img src="images/senspe-1.png" width="750">
 
 ## Feature Expression
 
-<img src="images/featexp-1.pdf" width="750">
+<img src="images/featexp-1.png" width="750">
 
 ## Testing this Finding
 
@@ -486,11 +485,11 @@ Given that the barrels are the same in each case, assuming perfect scans and no 
 
 ## Feature Expression by Study
 
-<img src="images/ccfstudy-1.pdf" width="400">
+<img src="images/ccfstudy-1.png" width="400">
 
 ## Ideal Cross-Section by Study
 
-<img src="images/crosscompare-1.pdf" width="750">
+<img src="images/crosscompare-1.png" width="750">
 
 ## From Lands to Bullets
 
@@ -519,13 +518,13 @@ Therefore, we can multiply the probabilities across the diagonals and take the h
 
 ## Bullet to Bullet Results
 
-<img src="images/scores-1.pdf" width="750">
+<img src="images/scores-1.png" width="750">
 
 ## Bullet Method 2
 
 Assuming bullets match if and only if all lands match:
 
-<img src="images/scores1-1.pdf" width="500">
+<img src="images/scores1-1.png" width="500">
 
 Performance is weaker in this case because our algorithm is much more likely to make false negatives compared to false positives.
 
@@ -533,7 +532,7 @@ Performance is weaker in this case because our algorithm is much more likely to 
 
 Average the scores along the maximal diagonal
 
-<img src="images/scores10-1.pdf" width="500">
+<img src="images/scores10-1.png" width="500">
 
 We once again achieve much clearer separation.
 
