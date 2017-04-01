@@ -801,7 +801,7 @@ qplot(x, value, group=variable, geom="polygon", data=dm, fill=variable,
       alpha=I(0.6), colour=I("grey20")) + 
   facet_wrap(~varLabel, ncol=4, scales="free") +
   theme_bw() + ylab("") + xlab("") +
-  scale_fill_brewer("Matches", palette="Paired") +
+  scale_fill_brewer("Bullet Land Pairs", palette="Paired") +
   theme(legend.position=c(1,0), 
         legend.justification = c("right", "bottom"),
         legend.background = element_rect(colour="grey75"),
@@ -984,16 +984,16 @@ qplot(data=predm, value, match, geom="jitter", colour=match, shape=match) + them
   xlab("Predicted probability of a match") +
   theme(legend.position="none")
 ```
-\caption{\label{fig:tree-forest}Prediction results from the tree and the forest. Using a cut-off probability of 0.5 the forest correctly predicts every single comparison. Compared to the tree, the forest's prediction probabilities are  shrunk towards either end of the prediction range. }
+\caption{\label{fig:tree-forest}Prediction results from the tree and the forest. Using a cut-off probability of 0.5 the forest correctly predicts every single comparison. Compared to the tree, the forest's prediction probabilities are  shrunk towards either end of the prediction range.}
 \end{figure}
 
 Besides resulting in a probabilistic quantification of matches, random forests also provide an assessment of the importance of each of the features derived from the bullets' 3D topological surface measurements. Figure \ref{fig:importance} shows an overview of the importance of each variable measured as the mean decrease in the Gini index when the variable in question is included in a tree (for the exact values please refer to Section \ref{table-of-feature-importance}). 
 
 \begin{figure}
-```{r echo=FALSE, fig.width=7, fig.height=2, out.width='.7\\textwidth', fig.align='center'}
+```{r featimp, echo=FALSE, fig.width=7, fig.height=2, out.width='.7\\textwidth', fig.align='center'}
 imp <- data.frame(importance(rtrees))
 imp$Variable <- row.names(imp)
-imp$Variable[c(7,8)] <- c("#matches", "#non-matches")
+imp$Variable[c(7,8)] <- c("matches", "mismatches")
 imp1 <- subset(imp, !(Variable %in% c("x1", "sd.D", "S")))
 imp2 <- subset(imp, Variable %in% c("x1", "sd.D", "S"))
 imp3 <- subset(imp, !(Variable %in% c("x1", "x2", "sd.D", "lag")))
@@ -1008,7 +1008,7 @@ qplot(MeanDecreaseGini,1, data=imp3, geom="point") +
 \caption{\label{fig:importance}Importance of features in the random forest. Importance is measured in terms of mean decrease in Gini index when including the variable in a decision tree.}
 \end{figure}
 
-The variables with the most predictive power are cross-correlation and the overall number of matching extrema, followed by the total depth of joint striations $S$ and total number of non-matches. CMS is found only in sixth place.
+The variables with the most predictive power are cross-correlation and the overall number of matching extrema, followed by the total depth of joint striations $S$ and total number of mismatches. CMS is found only in sixth place.
 
 Besides including results from known matches against known non-matches, we can increase the number of comparisons in the Hamby study to include all possible land-to-land comparisons. This effectively doubles the number of data points available. Comparisons not previously included in fitting the random forest can also be used as an additional source for assessing error rates.  Results for this and a more detailed discussion can be found in Section \ref{complete-evaluation-of-the-hamby-study}.
 
