@@ -17,8 +17,8 @@ library(knitr)
 
 ## Statistical Methods for Bullet Matching { .white }
 
-<img src="images/crime.jpg" class="cover">
-
+<img src="images/bullet_comparison_1.jpg" class="cover">
+<br><br><br><br><br><br><br>
 <p class="white">
 Eric Hare<br />
 Iowa State University<br />
@@ -141,9 +141,9 @@ qplot(y, value, data = br111) + theme_bw()
 
 The striations that identify a bullet to a gun barrel are located in the land impression areas [@xie:2009].
 
-1. At a fixed height $x$ extract a bullet's profile (previous figure, with $x = 243.75\mu m$).
-2. For each $y$ value, smooth out any deviations occurring near the minima by applying a rolling average with a pre-set \emph{smoothing factor} $s$.
-3. For each smoothed $y$ value, compute another rolling average using the same smoothing factor $s$ as above.
+1. At a fixed height $x$ extract a bullet's profile (previous figure).
+2. For each $y$ value, smooth out deviations near the shoulders by applying a rolling average with a pre-set **smoothing factor** (rolling window) $s$.
+3. For each smoothed $y$ value, repeat step two.
 4. Determine the location of the peak of the shoulders by finding the first and last doubly-smoothed value $y_i$ that is the maximum within its smoothing window.
 
 Parameters: $s = 35\mu m$
@@ -458,12 +458,12 @@ Extracting the ideal signature and then simulating a left-fixed 50% degradation 
 
 Verbatim from September:
 
-- We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of 35 bullets
-- There is likely an effect from the equipment used to scan the bullets, or the person performing the scan, and this should be accounted for
-- We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications (degraded bullets)
-- This future work will be part of a follow-up paper, in progress.
+- We are extremely limited by data here - Currently we've only assessed this algorithm on one particular set of **35 bullets**.
+- There is likely an **effect from the equipment** used to scan the bullets, or the person performing the scan, and this should be accounted for.
+- We need to assess the quality of the algorithm in case we don't have full bullet lands available, as is the case in many forensics applications (**degraded bullets**).
+- This future work will be part of a **follow-up paper**, in progress.
 
-We have steps to address each of these concerns...
+We have taken steps to address each of these concerns...
 
 ## Data Limitation
 
@@ -504,9 +504,7 @@ Idea: Two bullets $b_1$ and $b_2$ are matches if and only if some land $l_{b1}$ 
 Corollary: Two bullets are non-matches if and only if no land from $b_1$ matches a land from $b_2$.
 Assumptions: Each land on a bullet is independent of each other land
 
-\[P(M) = 1 - P(NM)\]
-\[P(M) = 1 - (P(NM1) \times P(NM2) \times ... \times P(NM6))\]
-\[P(M) = 1 - ((1 - P(M1)) \times (1 - P(M2)) \times ... \times (1 - P(M6)))\]
+<img src="images/equation.png" width="750">
 
 ## Exploiting the Alignment
 
