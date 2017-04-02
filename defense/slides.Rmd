@@ -284,6 +284,8 @@ Features are extracted from each land-to-land comparison:
 
 ## Feature Importance
 
+<br><br>
+
 <img src="images/featimp-1.png" width="750">
 
 # Degraded Bullets
@@ -558,7 +560,7 @@ The underlying technology we've created since September is a brand new database 
 
 ## Structure
 
-<img src="images/schema.png" width="750">
+<img src="images/schema.png" width="850">
 
 ## Live Demo
 
