@@ -199,10 +199,6 @@ p3 <- ggplot(data = final_doublesmoothed, aes(x = y, y = l50, colour = profile_i
 grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
-# Model Training
-
-Using these features, we can train a randomForest [@randomForest] package model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
-
 ```{r, echo=FALSE, cache=FALSE}
 con <- dbConnect(MySQL(), user = user, password = password,
                  dbname = dbname, host = host)
@@ -224,6 +220,28 @@ CCFs_withlands <- ccf %>%
     arrange(study.x, study.y) %>%
     mutate(match = as.logical(replace(match, is.na(match), 0)))
 ```
+
+We can observe the distributions of both CCF and the Roughness Correlation side by side, differentiating between known matches and known non-matches. Figure \ref{fig:roughcordist} shows this. It can be seen that the separation of the two groups along both variables is quite strong, but many known-matches have low values for each. The distributions of known non-matches, on the other hand, is relatively symmetric and normal.
+
+```{r roughcordist, echo=FALSE, fig.cap='Distributions of the Roughness Correlation compared to the CCF for known matches and known non-matches'}
+cor_compare <- CCFs_withlands %>%
+  select(ccf, rough_cor, match) %>%
+  gather(key = feature, value = value, ccf, rough_cor) %>%
+  mutate(match = factor(match, labels = c("Known non-matches (KNM)", "Known matches (KM)")))
+
+qplot(value, group=match, geom="density", data=cor_compare, fill=match, 
+      alpha=I(0.6), colour=I("grey20")) + 
+  facet_wrap(~feature, nrow = 2) +
+  theme_bw() + ylab("") + xlab("") +
+  scale_fill_brewer("Bullet Land Pairs", palette="Paired") +
+  theme(legend.background = element_rect(colour="grey75"),
+        axis.title.y=element_blank(),
+        plot.margin = unit(c(0,0,0,0), unit="cm"))
+```
+
+# Model Training
+
+Using these features, we can train a randomForest [@randomForest] package model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
 
 We can now train the forest using the previously defined features. We split the data into an 80% training, 20% testing framework to assess its out of sample performance, using the `caret` package [@caretpkg]. Table \ref{tab:avgforest} provides the results as a confusion matrix on the test set, averaged over ten independent random forests trained on ten random data subsets. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently (approximately 65 false negative land to land comparisons on the test set, compared with an average of less than four false positives).
 
