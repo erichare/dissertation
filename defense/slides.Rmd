@@ -122,7 +122,7 @@ We need to choose a location (height) of the bullet at which to extract a profil
 
 1. Extract a profile near the base of the bullet, call this value $d_0$.
 2. Take a fixed step $d$ and extract at $d + d_0$.
-3. Check the maximum cross correlation (CCF) between the signature at $d_0$ and at $d + d_0$.
+3. Check the maximum CCF between the signature at $d_0$ and at $d + d_0$.
 4. If this CCF exceeds a threshold $c$, choose $d_0$ as the signature
 5. Otherwise, repeat steps 2 to 4 for $d$, $2d$, $3d$, ... until the threshold is achieved.
 6. If the threshold is not achieved, flag the land for further investigation.
@@ -131,7 +131,7 @@ Parameters: $d = 25\mu m, d_0 = 25\mu m, c = 0.9$
 
 ## Step One (Continued)
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, fig.height=4}
 br111 <- get_crosscut("images/Br1 Bullet 1-5.x3p", x = 243.75)
 
 qplot(y, value, data = br111) + theme_bw()
@@ -150,14 +150,14 @@ Parameters: $s = 35\mu m$
 
 ## Identifying Shoulders (Easy)
 
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, fig.height=4}
 br111.groove <- get_grooves(br111)
 br111.groove$plot
 ```
 
 ## Identifying Shoulders (Challenging)
 
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, fig.height=4}
 br116 <- "../images/Hamby (2009) Barrel/bullets/Br1 Bullet 1-6.x3p"
 result2 <- get_grooves(get_crosscut(br116))
 result2$plot
@@ -184,7 +184,7 @@ br111.loess$resid
 
 As with detecting the shoulders, we can smooth the deviations and compute derivatives to identify peaks and valleys in the signature.
 
-```{r, warning=FALSE, fig.height=4}
+```{r, warning=FALSE, fig.height=3}
 br111.peaks <- get_peaks(br111.loess$data)
 br111.peaks$plot
 ```
@@ -604,7 +604,7 @@ While we showed the presence of operator effects, we didn't provide many recomme
 2. Modeling the operator effect
 3. Enforcing a quality standard prior to including in the algorithm (we did this, to a degree.)
 
-As Iowa State University and NIST continue to collaborate, we will likely have several more individuals scanning and uploading surface scans of bullets, and this will need to be further investigated to ensure the algorithms withstand the real-world scenario of a wide variety of scan quality.
+As Iowa State University and NIST continue to collaborate, we will likely have several more individuals scanning and uploading surface scans of bullets, and this will need to be further investigated to ensure the algorithms withstand real-world scenarios of scan quality.
 
 # About Me
 
@@ -632,8 +632,7 @@ As Iowa State University and NIST continue to collaborate, we will likely have s
 Special thanks to Alan Zheng at the National Institute of Standards and Technology for maintaining the NIST Ballistics Toolmark Research Database and providing many useful suggestions for our algorithm.
 
 - My GitHub: https://github.com/erichare
-- My Website: https://erichare.me
+- My Website: http://erichare.me
 
 Any Questions?
-
-## Bibliography
+<br><br><br><br><br>
