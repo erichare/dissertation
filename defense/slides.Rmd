@@ -60,7 +60,7 @@ Chapters:
 - (Arbitrary) match thresholds have been established as "standard practice" (e.g., more than 6 consecutively matching striae, @nichols:2003)
 - However, this has traditionally been less than statistical and such practices have come under fire in the courtroom [@giannelli:2011]
 
-The problems culminated in a 2009 NAS report which found *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing."* [@NAS:2009]
+2009 NAS report: *"much forensic evidence -- including, for example, bite marks and firearm and toolmark identification is introduced in criminal trials without any meaningful scientific validation, determination of error rates, or reliability testing."* [@NAS:2009]
 
 ## PCAST Report
 
@@ -108,7 +108,7 @@ plot3D.x3p.file(read_x3p("../images/Hamby (2009) Barrel/
 - R package *bulletr* [@bulletr] with a more streamlined image reading routine and additional statistical functionality
 - Each bullet is a set of 6 land-to-land scans
 
-![](images/bullet12.jpg)
+<img src="images/bullet12.jpg" width="400">
 
 ## Front-End Web Application
 
@@ -264,13 +264,13 @@ ggplot() +
 Features are extracted from each land-to-land comparison:
 
 - **ccf** (%) is the maximum value of the Cross-Correlation function evaluated at the optimal alignment. The CCF is defined as $C(\tau) = \int_{-\infty}^{\infty} f(t)g(t + \tau)dt$ where $\tau$ represents the the lag of the second signature [@vorburger:2011]. 
-- **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = 1/n \times \sum_t (f(t) - g(t))^2$. This is a measure of the total variation between two functions [@clarkson1933definitions].
+- **D** (mm) is the Euclidean vertical distance between each height value of the aligned signatures. This is defined as $D^2 = 1/n \times \sum_t (f(t) - g(t))^2$. Measure of the total variation [@clarkson1933definitions].
 - **matches** is the number of matching peaks/valleys (striae) of the overlapping portion of the aligned signatures.
 
 ## More Features
 
 - **mismatches** is the number of mismatching peaks/valleys (striae) of the overlapping portion of the aligned signatures.
-- **cms** is the number of consecutively matching peaks/valleys (striae) of the overlapping portion of the aligned signatures [@biasotti:1959, @thompson:2013].
+- **cms** is the number of consecutively matching peaks/valleys (striae) of the overlapping portion of the aligned signatures [@biasotti:1959].
 - **non_cms** is the number of consecutive mismatching peaks/valleys (striae) of the overlapping portion of the aligned signatures.
 - **S** is the the sum of the average heights of matched striae.
 
