@@ -306,6 +306,49 @@ print(xtable(result_wide_row, label = "tab:avgforeststudy", caption = "The avera
 
 # Feature Robustness
 
+As a first stage to assessing feature robustness, we can produce parallel coordinate plots of the various features based on true positives, true negatives, false positives, and false negatives. Figure \ref{fig:pcp} provides this. False positives tend to occur with anomalously high values of `sum_peaks`, `matches`, and `ccf`, while false negatives tend to resemble very closely the feature distribution of the true negatives, with a slightly higher average `ccf`.
+
+```{r pcp, echo=FALSE, message=FALSE, fig.cap="Parallel coordinate plot of the features based on the random forest confusion matrix.", fig.height=6, fig.width=10}
+set.seed(20170222)
+CCFs_train <- sample_frac(CCFs_withlands, size = .8)
+CCFs_test = setdiff(CCFs_withlands, CCFs_train)
+
+includes <- setdiff(names(CCFs_withlands), c("compare_id", "profile1_id", "profile2_id",
+                                         "study.x", "study.y", "barrel.x", "barrel.y",
+                                         "bullet.x", "bullet.y", "land.x", "land.y",
+                                         "land_id.x", "land_id.y", "signature_length", "lag", "overlap"))
+
+new_rtrees <- randomForest(factor(match) ~ ., data = CCFs_train[,includes], ntree = 300)
+CCFs_test$forest <- predict(new_rtrees, newdata = CCFs_test, type = "prob")[,2]
+
+CCFs_test <- CCFs_test %>%
+  mutate(Type = ifelse(forest >= .5 & match, "True Positive", 
+                       ifelse(forest >= .5 & !match, "False Positive",
+                              ifelse(forest < .5 & match, "False Negative",
+                                     "True Negative"))))
+
+CCFs_test_normalized <- CCFs_test %>% select(Type, ccf, rough_cor, D, matches, mismatches, cms, non_cms, sum_peaks)
+CCFs_test_normalized[,-1] <- lapply(CCFs_test_normalized[,-1], function(x) { (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE) })
+pcp_data <- CCFs_test_normalized %>%
+  group_by(Type) %>%
+  summarise_each(funs(mean))
+pcp_data_tall <- pcp_data %>%
+  gather(key = Feature, value = Value, 2:ncol(.))
+CCFs_tall <- CCFs_test_normalized %>%
+  mutate(id = 1:nrow(.)) %>%
+  select(id, everything()) %>%
+  gather(key = Feature, value = Value, 3:ncol(.))
+
+ggplot() +
+  geom_line(data = CCFs_tall, aes(x = Feature, y = Value, colour = Type, group = id, alpha = Type, size = Type)) +
+  geom_line(data = pcp_data_tall, aes(x = Feature, y = Value, colour = Type, group = Type), size = 2) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("#ff9999", "#e60000", "#b3b3ff", "#000099")) +
+  scale_alpha_manual(values = c(.1, .5, .002, .05)) +
+  scale_size_manual(values = c(1, 1, .1, 1))
+```
+
 ## Operator Effects
 
 We can attempt to quantify the effect of the study on the matching probability by fitting a new random forest which attempts to predict the study based on the derived features. Ideally, if the assumption of independence between lands holds across different operators, this forest should have poor performance - The set of derived features should be relatively consistent among known matches and known non-matches regardless of the study since the Hamby data in both sets originated from the same gun barrels.
@@ -405,14 +448,18 @@ print(xtable(tidy(mytest), digits = c(0, 4, 4, 0, 0), label = "tab:mykstest", ca
 
 ## Degraded Lands
 
-We now turn our attention to matching degraded bullet lands, in which only fragments of the land can be recovered. Because the NIST database currently contains only full bullet lands, this will involve performing a simulation and making some simplifying assumptions. We will simulate various levels of degradation from the left, right, and middle of the land. We will use degradation levels of $0$, $\frac{1}{32}$, $\frac{1}{16}$, $\frac{1}{8}$, $\frac{1}{4}$, $\frac{1}{2}$, and $\frac{3}{4}$ where each fraction represents the proportion of the land that is missing (i.e., a degradation level of $\frac{1}{4}$ implies that only 75% of the land was recoverable.) We will do this by subsetting the signatures. Note that this is a bit of a simplification because the signatures themselves are somewhat dependent on the data that is missing because of the properties of the LOESS smoother.
+We now turn our attention to matching degraded bullet lands, in which only fragments of the land can be recovered. Because the NIST database currently contains only full bullet lands, this will involve performing a simulation and making some simplifying assumptions. We will simulate various levels of degradation from the left, right, and middle of the land. We will use land proportions ranging from 100% to 25%, where the percentage represents the proportion of the land that was recovered. For example, a left-fixed 75% scenario implies that the left hand portion of the land was recovered, and the 25% rightmost portion was lost. We will do this by subsetting the signatures. Note that this is a bit of a simplification because the signatures themselves are somewhat dependent on the data that is missing because of the properties of the LOESS smoother.
 
 ```{r, cache=FALSE, echo=FALSE}
 load("data/rtrees.RData")
 
-ccf <- dbReadTable(con, "ccf") %>% filter(compare_id >= 4, compare_id < 23)
+ccf <- dbReadTable(con, "ccf_new") %>% filter(compare_id %in% c(4:16, 25:30))
 compares <- dbReadTable(con, "compares")
 CCFs_withlands_degrade <- ccf %>%
+    mutate(profile1_id_bak = profile1_id,
+           profile1_id = pmin(profile1_id, profile2_id),
+           profile2_id = pmax(profile2_id, profile1_id_bak)) %>%
+    select(-profile1_id_bak) %>%
     left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile1_id" = "profile_id")) %>%
     left_join(dplyr::select(profiles, profile_id, land_id), by = c("profile2_id" = "profile_id")) %>%
     left_join(my_matches, by = c("land_id.x" = "land1_id", "land_id.y" = "land2_id")) %>%
@@ -429,9 +476,9 @@ CCFs_withlands_plot <- CCFs_withlands_degrade
 CCFs_withlands_plot$match <- factor(CCFs_withlands_plot$match, labels = c("Known Non-Match", "Known Match"))
 ```
 
-Figure \ref{fig:senspe} gives the sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the degradation level, but that the decline for left degradation is less steep in terms of sensitivity. In fact, the sensitivity recovers a bit for left fixed land as the land proportion declines from 50% to 25%. Meanwhile, the specificity drops more dramatically for left, middle, and right fixed degraded lands. For a more in-depth exploration into the matching probabilities, Figure \ref{fig:deghist} provides histograms of the matching probability facetted by the degradation level and known match versus known non-match. The matching probabilities suffer compared with the full lands in all cases, but the change is much less for different levels of right degradation - In other words, if we degrade the right side of the land and maintain portions of the left side, the algorithm is better able to provide matching probabilities that accurately reflect the true state of nature.
+Figure \ref{fig:senspe} gives the sensitivity (true positive rate) and specificity (true negative rate) of the random forest predictions for given levels of degradation. It can be seen that the sensitivity drops a bit until 50% land proportion, and then rises. This occurs because the algorithm begins producing more positive predictions in general, likely as a result of the ccf being arbitrarily higher for known non-matches due to the small signature. On the other hand, the specificity drops dramatically for left, middle, and right fixed degraded lands for land proportions of less than 50%. For a more in-depth exploration into the matching probabilities, Figure \ref{fig:deghist} provides histograms of the matching probability facetted by the degradation level and known match versus known non-match. The matching probabilities suffer compared with the full lands in all cases. The jump seems to be most noticeable beginning at about 25% degradation (75% land proportion), and the algorithm struggles beyond 50%.
 
-```{r senspe, echo=FALSE, fig.cap='Sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the land proportion, but that the decline for left degradation is less steep in terms of sensitivity.'}
+```{r senspe, echo=FALSE, fig.cap='Sensitivity and specificity of the random forest for given levels of degradation. It can be seen that both metrics decline as a function of the land proportion, except for the sensitivity, which rises for very low levels of the land proportion due to an increase in the amount of positive predictions.'}
 result <- CCFs_withlands_degrade %>%
     mutate(fixed = ifelse(degrade_left == 0 & degrade_right == 0, "full", ifelse(degrade_left == 0, "left", ifelse(degrade_right == 0, "right", "middle"))),
            level = degrade_left + degrade_right) %>%
@@ -446,7 +493,7 @@ result$value[1:2] <- c(sens_result, spec_result)
 
 ## Produce plot
 ggplot(result, aes(x = level, y = value, colour = fixed)) +
-    facet_wrap(~metric, scales = "free_y", nrow = 2) +
+    facet_wrap(~metric, nrow = 2) +
     geom_point() +
     geom_line() +
     theme_bw() +
@@ -454,9 +501,9 @@ ggplot(result, aes(x = level, y = value, colour = fixed)) +
     xlab("Land Proportion")
 ```
 
-Figure \ref{fig:featexp} gives the feature expression for known matches, as a function of the land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed. In particular, the ccf, cms, and roughness correlation remain high even as the land percentage degrades. Meanwhile, features that are inversely correlated with matching probability, such as D and mismatches, are most strongly expressed in the right-fixed lands.
+Figure \ref{fig:featexp} gives the feature expression for known matches, as a function of the land proportion. It is immediately visible that the feature expression becomes quite variable when only a small fraction of the land is recovered, such as 25%. For instance, `sum_peaks` and the `cms` both drop, while `D` rises. Interestingly, some of the features are better expressed for the middle-fixed case. Overall, the feature expression remains relatively consistent as the land degrades up to a bit under 50% land proportion.
 
-```{r featexp, echo=FALSE, fig.cap='Feature expression for known matches, as a function of land proportion. It can be seen that when we fix the left hand side of the bullet land, the features tend to be better expressed.'}
+```{r featexp, echo=FALSE, fig.cap='Feature expression for known matches, as a function of land proportion. It can be seen that when we fix the middle portion of the bullet land, the features tend to be better expressed.'}
 feature_exp <- CCFs_withlands_degrade %>%
     filter(match) %>%
     dplyr::select(degrade_left, degrade_right, ccf, rough_cor, D, matches, mismatches, cms, non_cms, sum_peaks) %>%
@@ -477,7 +524,7 @@ ggplot(data = feature_exp, aes(x = level, y = value, colour = fixed)) +
     facet_wrap(~feature, scales = "free_y")
 ```
 
-To come full circle, we will now attempt to match a particular land which exhibits bad tank rash. Figure \ref{fig:br924} provides an image of the surface of this land. Due to the tank rash, it was originally excluded from matching consideration. However, it can be seen that approximately half of the bullet remains relatively unaffected.
+To come full circle, we will now attempt to match a particular land which exhibits bad tank rash. Figure \ref{fig:br924} provides an image of the surface of this land. Due to the tank rash, it was originally excluded from matching consideration. However, it can be seen that approximately half of the bullet remains relatively unaffected. We will extract a signature of the unaffected half and attempt to match this signature to its full known match.
 
 \begin{figure}[H]
 \centering
@@ -486,7 +533,7 @@ To come full circle, we will now attempt to match a particular land which exhibi
 \label{fig:br924}
 \end{figure}
 
-Table \ref{tab:br924pred} provides the features derived, after extracting only the first 50% of the Hamby Barrel 9 Bullet 2, 4th land (and hence, simulating a left-fixed 50% degraded scenario), compared with a feature comparison between both full lands (and hence, including the tank rash striae). The features are derived in a comparison with its known match, the full Bullet 1 3rd land fired from Barrel 9. The features, including the ccf and the matches, are expressed enough to (barely) indicate a match in the case of the degraded bullet. Using the pre-trained random forest, the predicted matching probability is 51.67%. This is encouraging in that attempting to match the full bullet land, by comparison, yields a matching probability of 0.0167%. This is due to the relatively higher values of the ccf, cms, and matches for the degraded comparison, and suggests the feature standardization is working as intended.
+Table \ref{tab:br924pred} provides the features derived, after extracting only the first 50% of the Hamby Barrel 9 Bullet 2, 4th land (and hence, simulating a left-fixed 50% degraded scenario), compared with a feature comparison between both full lands (and hence, including the tank rash striae). The features are derived in a comparison with its known match, the full Bullet 1 third land fired from Barrel 9. The features, including the ccf and the matches, are expressed enough to (barely) indicate a match in the case of the degraded bullet. Using the pre-trained random forest, the predicted matching probability is 52%. This is encouraging in that attempting to match the full bullet land, by comparison, yields a matching probability of 0.0067%. This is due to the relatively higher values of the ccf, cms, and matches for the degraded comparison, and suggests the feature standardization is working as intended.
 
 ```{r, echo=FALSE, results='asis'}
 br924 <- read_x3p("images/Hamby (2009) Barrel/bullets/Br9 Bullet 2-4.x3p")
@@ -824,7 +871,7 @@ In this paper, we have introduced a set of robust features which can be used to 
 
 While these effects were clear, the way in which this should be accounted for is less clear, however. In the ideal case, bullets fired from a particular gun barrel should yield surface scans that are of identical quality and properties, regardless of the operator performing the scan. To achieve this, rigorous standards may need to be put in place with regards to the alignment of the bullet under the objective, and the procedure used to scan the bullet surface. Such procedures will require further investigation in order to lay out. For instance, due to the stark difference between the ideal cross section across two studies, procedures may need to dictate the margin from the edge of the objective at which the bullet can be placed.
 
-Some first steps towards addressing the issue of degraded bullet lands was also taken. As suspected, the algorithm performance declines as a function of the amount of degradation. However, depending on the location of the degradation, this effect differs. Among the known bullet matches, if the left hand portion of the Hamby bullet signatures remains in tact and we degrade the right hand side, the matching performance is far less impacted than if other portions of the land are degraded.
+Some first steps towards addressing the issue of degraded bullet lands was also taken. As suspected, the algorithm performance declines as a function of the amount of degradation. However, there is a relatively clear separation around about 50%. If 50% of the land or more is recovered, the algorithm performance is much stronger than values below that.
 
 As before, further generalization and analysis of these algorithms are a bit limited by a lack of data. The assessment has still been performed on a controlled test set. The degraded land simulation itself may not represent entirely realistic scenarios of recovering fragmented bullets. However, as more data is collected, the model can be continually updated and retrained in order to improve its performance and handle more obscure cases other than the idealized versions we've currently been working with.
 
