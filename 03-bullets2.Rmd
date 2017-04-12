@@ -241,7 +241,7 @@ qplot(value, group=match, geom="density", data=cor_compare, fill=match,
 
 # Model Training
 
-Using these features, we can train a randomForest [@randomForest] package model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
+Using these features, we can train a randomForest [@randomForest] model which attempts to predict whether two lands match given the values of these features. We first join information on the study the data originated from, along with information on whether they are matches. The three studies currently contained in the database are Hamby (Set 252), Hamby (Set 44), and Cary. For purposes of the remainder of this analysis, we will exclude the Cary bullets from consideration. Because this was a study specifically designed to assess the persistence of striation markings over a series of fires from the same barrel, every Cary bullet is a known match to every other Cary bullet, although early firings do not produce the same markings that later firings do. Hence, we will consider Hamby (Set 252) and Hamby (Set 44) only.
 
 We can now train the forest using the previously defined features. We split the data into an 80% training, 20% testing framework to assess its out of sample performance, using the `caret` package [@caretpkg]. Table \ref{tab:avgforest} provides the results as a confusion matrix on the test set, averaged over ten independent random forests trained on ten random data subsets. It can be seen that false positives are exceedingly rare, but false negatives occur more frequently (approximately 65 false negative land to land comparisons on the test set, compared with an average of less than four false positives).
 
@@ -306,9 +306,9 @@ print(xtable(result_wide_row, label = "tab:avgforeststudy", caption = "The avera
 
 # Feature Robustness
 
-As a first stage to assessing feature robustness, we can produce parallel coordinate plots of the various features based on true positives, true negatives, false positives, and false negatives. Figure \ref{fig:pcp} provides this. False positives tend to occur with anomalously high values of `sum_peaks`, `matches`, and `ccf`, while false negatives tend to resemble very closely the feature distribution of the true negatives, with a slightly higher average `ccf`.
+As a first stage to assessing feature robustness, we can produce parallel coordinate plots of the various features based on true positives, true negatives, false positives, and false negatives. Figures \ref{fig:pcp} and \ref{fig:pcp2} provide this. The means of the true positive and the false negative groups are shown, respectively, in the two figures. False positives tend to occur with anomalously high values of `sum_peaks`, `matches`, and `ccf`, while false negatives tend to resemble very closely the feature distribution of the true negatives, with a slightly higher average `ccf`.
 
-```{r pcp, echo=FALSE, message=FALSE, fig.cap="Parallel coordinate plot of the features based on the random forest confusion matrix.", fig.height=6, fig.width=10}
+```{r pcp, echo=FALSE, message=FALSE, fig.cap="Parallel coordinate plot of the features based on the random forest confusion matrix for true and false positives.", fig.height=6, fig.width=10}
 set.seed(20170222)
 CCFs_train <- sample_frac(CCFs_withlands, size = .8)
 CCFs_test = setdiff(CCFs_withlands, CCFs_train)
@@ -340,13 +340,31 @@ CCFs_tall <- CCFs_test_normalized %>%
   gather(key = Feature, value = Value, 3:ncol(.))
 
 ggplot() +
-  geom_line(data = CCFs_tall, aes(x = Feature, y = Value, colour = Type, group = id, alpha = Type, size = Type)) +
-  geom_line(data = pcp_data_tall, aes(x = Feature, y = Value, colour = Type, group = Type), size = 2) +
+  geom_line(data = filter(CCFs_tall, Type %in% c("True Positive", "False Positive")), aes(x = Feature, y = Value, colour = Type, group = id, alpha = Type, size = Type)) +
+  geom_line(data = filter(pcp_data_tall, Type %in% c("True Positive")), aes(x = Feature, y = Value, colour = Type, group = Type), size = 3) +
+  ylab("Normalized Value") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_color_manual(values = c("#ff9999", "#e60000", "#b3b3ff", "#000099")) +
-  scale_alpha_manual(values = c(.1, .5, .002, .05)) +
-  scale_size_manual(values = c(1, 1, .1, 1))
+  scale_color_manual(values = c("#e60000", "#000099")) +
+  scale_alpha_manual(values = c(1, .05)) +
+  scale_size_manual(values = c(1, 1))
+```
+
+```{r pcp2, echo=FALSE, message=FALSE, fig.cap="Parallel coordinate plot of the features based on the random forest confusion matrix for true and false negatives.", fig.height=6, fig.width=10}
+mysamp <- sample(CCFs_tall$id[CCFs_tall$Type == "True Negative"], 1000)
+trueneg_sample <- CCFs_tall %>%
+  filter(id %in% mysamp) %>%
+  rbind(CCFs_tall %>% filter(Type == "False Negative"))
+
+ggplot() +
+  #geom_line(data = filter(CCFs_tall, Type %in% c("True Negative", "False Negative")), aes(x = Feature, y = Value, colour = Type, group = id, alpha = Type, size = Type)) +
+  geom_line(data = trueneg_sample, aes(x = Feature, y = Value, colour = Type, group = id, alpha = Type)) +
+  theme_bw() +
+  geom_line(data = filter(pcp_data_tall, Type %in% c("False Negative")), aes(x = Feature, y = Value, colour = Type, group = Type), size = 3) +
+  ylab("Normalized Value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("#ff9999", "#b3b3ff")) +
+  scale_alpha_manual(values = c(.5, .1))
 ```
 
 ## Operator Effects
