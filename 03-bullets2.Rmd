@@ -708,6 +708,8 @@ finaloutput <- outputdf %>%
 print(xtable(finaloutput, digits = c(0, 0, 4, 4), label = "tab:br924pred", caption = "Features extracted for a comparison of the full Hamby Barrel 9 Bullet 1 Land 3, with a left-fixed 50 percent degraded portion of Hamby Barrel 9 Bullet 2 Land 4. These two lands are known matches, and indeed the random forest does predict a match."), comment = FALSE, include.rownames = FALSE)
 ```
 
+\clearpage
+
 # From Lands to Bullets
 
 One other area deserving further exploration is generalizing these algorithms for matching full bullets rather than indvidual lands, as would be done in a criminal justice application. One such approach is to recognize that (at least for the Hamby bullets) there should be six matching pairs of lands for any two bullets that were fired from the same gun barrel. Therefore, for each pair of bullets, we can extract the six highest matching probabilities and average them. If we do so, we obtain a clear separation as seen in Figure \ref{fig:firstscore}. No known-matches have a score below 50%, while all known non-matches have a score below 10%.
