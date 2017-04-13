@@ -1,4 +1,4 @@
-\chapter{AUTOMATIC MATCHING OF BULLET LANDS}
+\addtocounter{chapter}{1}\setcounter{section}{0}\specialchapt{CHAPTER 2. AUTOMATIC MATCHING OF BULLET LANDS}
 
 \begin{center}
 
@@ -448,9 +448,7 @@ ggplot() +
 \end{figure}
 
 Figure \ref{fig:match} gives an overview of the automated matching routine: 
-We first identify a stable region for each bullet land and extract the signature at the lowest height in this region, because typically, individual characteristics are best expressed at the lower end of the bullet (see Section \ref{signature-intensities} for a more detailed discussion). 
-
-All of the other steps are done on pairs of bullet lands:
+We first identify a stable region for each bullet land and extract the signature at the lowest height in this region, because typically, individual characteristics are best expressed at the lower end of the bullet, near the base (see Section \ref{signature-intensities} for a more detailed discussion). All of the other steps are done on pairs of bullet lands:
 
 1. **Smooth the two signatures** using a loess with a very small span (see Figure \ref{fig:smooth}). 
 2. Use cross-correlation to **find the best alignment** of the two signatures: shift one of the signatures by the lag indicated by the cross-correlation function (see Figure \ref{fig:ccf} for the cross-correlation function and Figure \ref{fig:crosscutX} for the resulting shift).

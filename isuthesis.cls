@@ -561,10 +561,10 @@
 \def\@depmajmac#1#2#3#4{% department and major macro
   \ifcase\@deptnum \def\@depart{}
      \or \def\@depart{\@depttitle #1 \\}
-     \else \def\@depart{\@depttitle #1\\ #2\\}\fi
+     \else \def\@depart{\@depttitle #1; #2\\}\fi
   \ifcase\@majornum \def\@major{}
      \or \def\@major{\@majortitle #3}
-     \else \def\@major{\@majortitle #3 \\  #4}\fi}
+     \else \def\@major{\@majortitle #3; #4}\fi}
 
 \newif\if@interdept \@interdeptfalse
 \newif\if@interdeptm \@interdeptmfalse
@@ -584,7 +584,7 @@
      \def\@majortitle{Major: }\fi}
 \def\comajors#1#2{\@majornum=2 \signmajornum=2
    \@depmajmac{\@deptone}{\@depttwo}{#1}{#2}
-   \def\@majortitle{Co-majors:\\ }}
+   \def\@majortitle{Co-majors: }}
 
 \def\signmajor#1{\def\@signmajor{#1}}
 \signmajor{\ifnum\signmajornum=2 Co-major Professor \else 
@@ -600,7 +600,7 @@ For the Major Program\fi\fi}
 \def\minor#1{\def\@minor{\\Minor: #1}}
 \def\@minor{}
 
-\def\mprofs#1#2{\def\@mprofs{#1, Major Professor\\#2, Co-Major Professor} 
+\def\mprofs#1#2{\def\@mprofs{#1, Co-major Professor\\#2, Co-major Professor} 
 \signmajornum=2} 
 \def\@mprofs{}
 
@@ -745,7 +745,7 @@ For the Major Program\fi\fi}
    \vskip 11pt
    by \\
    \vskip 11pt
-   \@author
+   \textbf{\@author}
    \vskip 30pt
    A \@format\ submitted to \@submit\ \\
    in partial fulfillment of the requirements for the degree of\\
@@ -760,6 +760,9 @@ For the Major Program\fi\fi}
    \@mprof 
    \@mprofs
    \@members
+   \vspace{12pt}
+   \vfill
+   The student author and the program of study committee are solely responsible for the content of this dissertation. The Graduate College will ensure this dissertation is globally accessible and will not permit alterations after a degree is conferred.
    \end{singlespace}
    \end{center}
    \vfill

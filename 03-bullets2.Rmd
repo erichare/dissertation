@@ -1,4 +1,4 @@
-\chapter{ALGORITHMIC APPROACHES TO BULLET MATCHING WITH AN EMPHASIS ON THE DEGRADED LAND CASE}
+\addtocounter{chapter}{1}\setcounter{section}{0}\specialchapt{CHAPTER 3. ALGORITHMIC APPROACHES TO BULLET MATCHING WITH AN EMPHASIS ON THE DEGRADED LAND CASE}
 
 \begin{center}
 
@@ -892,6 +892,8 @@ While these effects were clear, the way in which this should be accounted for is
 Some first steps towards addressing the issue of degraded bullet lands was also taken. As suspected, the algorithm performance declines as a function of the amount of degradation. However, there is a relatively clear separation around about 50%. If 50% of the land or more is recovered, the algorithm performance is much stronger than values below that.
 
 As before, further generalization and analysis of these algorithms are a bit limited by a lack of data. The assessment has still been performed on a controlled test set. The degraded land simulation itself may not represent entirely realistic scenarios of recovering fragmented bullets. However, as more data is collected, the model can be continually updated and retrained in order to improve its performance and handle more obscure cases other than the idealized versions we've currently been working with.
+
+\clearpage
 
 # Appendix
 

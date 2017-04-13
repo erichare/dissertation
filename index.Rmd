@@ -22,6 +22,8 @@ header-includes:
     - \hypersetup{colorlinks=true,linkcolor=blue,anchorcolor=blue,citecolor=blue,filecolor=blue,urlcolor=blue,bookmarksnumbered=true,pdfview=FitB}
     - \usepackage{natbib}
     - \bibliographystyle{apa}
+    - \floatstyle{plaintop}
+    - \restylefloat{table}
 ---
 
 \newgeometry{letterpaper, left=1.25in, top=0.55in, right=1.02in, bottom=1in, includehead=true}

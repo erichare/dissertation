@@ -1,1 +1,1 @@
-\specialchapt{BIBLIOGRAPHY}
+\addtocounter{chapter}{1}\setcounter{section}{0}\specialchapt{BIBLIOGRAPHY}

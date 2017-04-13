@@ -1,4 +1,4 @@
-\chapter{A MODERN BULLET MATCHING DATABASE AND WEB APPLICATION}
+\addtocounter{chapter}{1}\setcounter{section}{0}\specialchapt{CHAPTER 4. A MODERN BULLET MATCHING DATABASE AND WEB APPLICATION}
 
 \begin{center}
 

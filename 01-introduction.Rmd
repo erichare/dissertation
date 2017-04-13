@@ -1,4 +1,4 @@
-\chapter{INTRODUCTION}
+\addtocounter{chapter}{1}\specialchapt{CHAPTER 1. INTRODUCTION}
 
 # Background
 
