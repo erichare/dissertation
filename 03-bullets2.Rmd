@@ -708,7 +708,7 @@ finaloutput <- outputdf %>%
 print(xtable(finaloutput, digits = c(0, 0, 4, 4), label = "tab:br924pred", caption = "Features extracted for a comparison of the full Hamby Barrel 9 Bullet 1 Land 3, with a left-fixed 50 percent degraded portion of Hamby Barrel 9 Bullet 2 Land 4. These two lands are known matches, and indeed the random forest does predict a match."), comment = FALSE, include.rownames = FALSE)
 ```
 
-\clearpage
+\addtocontents{toc}{\protect\newpage}
 
 # From Lands to Bullets
 
